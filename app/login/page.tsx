@@ -9,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 
 // Fase 1: autenticación real por correo/contraseña vía Supabase Auth.
-// El botón de Microsoft (Entra ID SSO) queda pendiente para la Fase 8
-// (integración M365, sección 14 del documento de arquitectura).
+// Fase 8: SSO con Microsoft Entra ID vía el proveedor "azure" de Supabase
+// Auth (sección 14 del documento de arquitectura). El intercambio del
+// código de autorización ocurre en app/auth/callback/route.ts.
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [msLoading, setMsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
@@ -39,6 +41,26 @@ export default function LoginPage() {
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  async function handleMicrosoftLogin() {
+    setMsLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: "email openid profile",
+      },
+    });
+
+    // Si signInWithOAuth arranca bien, el navegador redirige a Microsoft
+    // de inmediato; solo llegamos aquí si algo falló antes de redirigir.
+    if (error) {
+      setError(error.message);
+      setMsLoading(false);
+    }
   }
 
   return (
@@ -100,8 +122,14 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <Button variant="outline" className="w-full" disabled>
-            Continuar con Microsoft (Fase 8)
+          <Button
+            variant="outline"
+            className="w-full"
+            type="button"
+            disabled={msLoading}
+            onClick={handleMicrosoftLogin}
+          >
+            {msLoading ? "Redirigiendo…" : "Continuar con Microsoft"}
           </Button>
         </CardContent>
       </Card>
