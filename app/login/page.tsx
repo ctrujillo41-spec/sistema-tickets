@@ -21,6 +21,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [msLoading, setMsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -41,6 +43,30 @@ export default function LoginPage() {
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  // Envía el correo de recuperación con el redirect apuntando a nuestro
+  // propio route handler de callback (app/auth/callback/route.ts), que ya
+  // sabe intercambiar el código por una sesión; le pasamos ?next= para que
+  // en vez de mandar a /dashboard mande a la pantalla de "nueva contraseña".
+  async function handleForgotPassword() {
+    if (!email) {
+      setError("Escribe tu correo arriba primero y luego da clic en \"¿Olvidaste tu contraseña?\".");
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+    });
+
+    setResetLoading(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setResetSent(true);
   }
 
   async function handleMicrosoftLogin() {
@@ -103,10 +129,24 @@ export default function LoginPage() {
             </div>
 
             {error && <p className="text-xs text-danger">{error}</p>}
+            {resetSent && (
+              <p className="text-xs text-success">
+                Te mandamos un correo con el enlace para elegir tu contraseña nueva.
+              </p>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Entrando…" : "Iniciar sesión"}
             </Button>
+
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              className="w-full text-center text-xs text-muted-foreground hover:text-accent hover:underline disabled:opacity-60"
+            >
+              {resetLoading ? "Enviando…" : "¿Olvidaste tu contraseña?"}
+            </button>
           </form>
 
           <p className="text-xs text-muted-foreground">
