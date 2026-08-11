@@ -9,11 +9,96 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          changed_fields: Json | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields?: Json | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields?: Json | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_log: {
+        Row: {
+          error_message: string | null
+          file_size_bytes: number | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          storage_path: string | null
+          tables_backed_up: Json | null
+          triggered_by: string
+        }
+        Insert: {
+          error_message?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          storage_path?: string | null
+          tables_backed_up?: Json | null
+          triggered_by?: string
+        }
+        Update: {
+          error_message?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          storage_path?: string | null
+          tables_backed_up?: Json | null
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           company_id: string | null

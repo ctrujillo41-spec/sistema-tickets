@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Tags, Landmark } from "lucide-react";
+import { Users, Building2, Tags, Landmark, ScrollText, DatabaseBackup } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth";
 
@@ -27,6 +27,18 @@ const SECTIONS = [
     title: "Empresas / clientes",
     desc: "Listado de empresas con RFC, usado al crear tickets",
     icon: Landmark,
+  },
+  {
+    href: "/dashboard/settings/audit-log",
+    title: "Bitácora de auditoría",
+    desc: "Historial de altas, bajas y cambios administrativos",
+    icon: ScrollText,
+  },
+  {
+    href: "/dashboard/settings/backups",
+    title: "Respaldos",
+    desc: "Exportaciones diarias verificadas, ejecutar y descargar",
+    icon: DatabaseBackup,
   },
 ];
 
