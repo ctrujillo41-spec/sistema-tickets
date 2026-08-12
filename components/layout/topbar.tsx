@@ -1,5 +1,6 @@
 "use client";
 
+import { Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
 import { GlobalSearch } from "@/components/layout/global-search";
@@ -11,9 +12,10 @@ interface TopbarProps {
   userLabel: string;
   userEmail: string;
   role: Role;
+  onMenuClick: () => void;
 }
 
-export function Topbar({ userId, userLabel, userEmail, role }: TopbarProps) {
+export function Topbar({ userId, userLabel, userEmail, role, onMenuClick }: TopbarProps) {
   const initials =
     userLabel
       .trim()
@@ -25,6 +27,14 @@ export function Topbar({ userId, userLabel, userEmail, role }: TopbarProps) {
 
   return (
     <header className="flex h-14 items-center gap-3 border-b border-border bg-background px-4">
+      <button
+        type="button"
+        onClick={onMenuClick}
+        aria-label="Abrir menú"
+        className="text-muted-foreground hover:text-foreground md:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
       <GlobalSearch role={role} />
       <ThemeToggle />
       <NotificationsBell userId={userId} />

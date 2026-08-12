@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getCurrentProfile } from "@/lib/auth";
 import type { Role } from "@/lib/auth";
 
@@ -11,12 +10,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const label = profile?.full_name || profile?.email || "Usuario";
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar role={role} />
-      <div className="flex flex-1 flex-col">
-        <Topbar userId={profile?.id ?? ""} userLabel={label} userEmail={profile?.email ?? ""} role={role} />
-        <main className="flex-1 bg-background p-6">{children}</main>
-      </div>
-    </div>
+    <DashboardShell
+      role={role}
+      userId={profile?.id ?? ""}
+      userLabel={label}
+      userEmail={profile?.email ?? ""}
+    >
+      {children}
+    </DashboardShell>
   );
 }
