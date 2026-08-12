@@ -14,18 +14,29 @@ interface Agent {
   full_name: string | null;
 }
 
+interface Company {
+  id: string;
+  name: string;
+}
+
 export function TicketStatusControls({
   ticketId,
   initialStatus,
   initialPriority,
   initialAgentId,
   agents,
+  initialCompanyId,
+  companies,
+  canEditCompany,
 }: {
   ticketId: string;
   initialStatus: string;
   initialPriority: string;
   initialAgentId: string | null;
   agents: Agent[];
+  initialCompanyId?: string | null;
+  companies?: Company[];
+  canEditCompany?: boolean;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -33,6 +44,7 @@ export function TicketStatusControls({
   const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState(initialPriority);
   const [agentId, setAgentId] = useState(initialAgentId ?? "");
+  const [companyId, setCompanyId] = useState(initialCompanyId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +119,31 @@ export function TicketStatusControls({
           ))}
         </Select>
       </div>
+
+      {canEditCompany && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Empresa</label>
+          <Select
+            value={companyId}
+            disabled={saving}
+            onChange={(e) => {
+              setCompanyId(e.target.value);
+              persist({ company_id: e.target.value || null });
+            }}
+            className="w-full"
+          >
+            <option value="">Sin especificar</option>
+            {(companies ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+          {/* Solo el administrador reasigna empresa: es el dato clave para que los
+              reportes por cliente salgan correctos, y a diferencia del agente
+              asignado, un cambio equivocado aquí afecta reportes históricos. */}
+        </div>
+      )}
 
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>

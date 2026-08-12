@@ -22,6 +22,7 @@ interface TicketDetail {
   created_at: string;
   requester_id: string;
   assigned_agent_id: string | null;
+  company_id: string | null;
   csat_rating: number | null;
   sla_response_due: string | null;
   sla_resolution_due: string | null;
@@ -43,7 +44,7 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
     .from("tickets")
     .select(
       `id, ticket_number, subject, description, status, priority, created_at,
-       requester_id, assigned_agent_id, csat_rating,
+       requester_id, assigned_agent_id, company_id, csat_rating,
        sla_response_due, sla_resolution_due, first_response_at, resolved_at,
        company:companies(name),
        department:departments(name),
@@ -59,8 +60,9 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
   const ticket = ticketRaw as unknown as TicketDetail;
 
   const isStaff = profile?.role === "admin" || profile?.role === "agent";
+  const isAdmin = profile?.role === "admin";
 
-  const [{ data: commentsRaw }, { data: attachmentsRaw }, { data: historyRaw }, { data: agentsRaw }] =
+  const [{ data: commentsRaw }, { data: attachmentsRaw }, { data: historyRaw }, { data: agentsRaw }, { data: companiesRaw }] =
     await Promise.all([
       supabase
         .from("ticket_comments")
@@ -79,6 +81,9 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
         .order("created_at", { ascending: false }),
       isStaff
         ? supabase.from("profiles").select("id, full_name").in("role", ["admin", "agent"]).eq("is_active", true).order("full_name")
+        : Promise.resolve({ data: [] }),
+      isAdmin
+        ? supabase.from("companies").select("id, name").eq("is_active", true).order("name")
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -161,6 +166,9 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
                 initialPriority={ticket.priority}
                 initialAgentId={ticket.assigned_agent_id}
                 agents={(agentsRaw as any) ?? []}
+                initialCompanyId={ticket.company_id}
+                companies={(companiesRaw as any) ?? []}
+                canEditCompany={isAdmin}
               />
             </CardContent>
           </Card>
