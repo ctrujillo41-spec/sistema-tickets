@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Tags, Landmark, ScrollText, DatabaseBackup } from "lucide-react";
+import { Users, Building2, Tags, Landmark, ScrollText, DatabaseBackup, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth";
 
@@ -27,6 +27,12 @@ const SECTIONS = [
     title: "Empresas / clientes",
     desc: "Listado de empresas con RFC, usado al crear tickets",
     icon: Landmark,
+  },
+  {
+    href: "/dashboard/settings/sla",
+    title: "SLA por prioridad",
+    desc: "Tiempos de primera respuesta y resolución de cada prioridad",
+    icon: Timer,
   },
   {
     href: "/dashboard/settings/audit-log",

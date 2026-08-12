@@ -345,6 +345,30 @@ export type Database = {
           },
         ]
       }
+      sla_policies: {
+        Row: {
+          label: string
+          priority: string
+          resolution_hours: number
+          response_hours: number
+          updated_at: string
+        }
+        Insert: {
+          label: string
+          priority: string
+          resolution_hours: number
+          response_hours: number
+          updated_at?: string
+        }
+        Update: {
+          label?: string
+          priority?: string
+          resolution_hours?: number
+          response_hours?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_id: string
