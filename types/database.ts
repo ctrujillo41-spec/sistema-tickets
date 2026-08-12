@@ -99,6 +99,45 @@ export type Database = {
         }
         Relationships: []
       }
+      business_hours: {
+        Row: {
+          close_time: string | null
+          is_open: boolean
+          label: string
+          open_time: string | null
+          weekday: number
+        }
+        Insert: {
+          close_time?: string | null
+          is_open?: boolean
+          label: string
+          open_time?: string | null
+          weekday: number
+        }
+        Update: {
+          close_time?: string | null
+          is_open?: boolean
+          label?: string
+          open_time?: string | null
+          weekday?: number
+        }
+        Relationships: []
+      }
+      business_hours_settings: {
+        Row: {
+          singleton: boolean
+          timezone: string
+        }
+        Insert: {
+          singleton?: boolean
+          timezone?: string
+        }
+        Update: {
+          singleton?: boolean
+          timezone?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           company_id: string | null
