@@ -14,7 +14,8 @@ import {
   PRIORITY_ORDER,
 } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
-import { DonutCard, CHART_COLORS, type DonutSlice } from "@/components/dashboard/donut-card";
+import { DonutCard, type DonutSlice } from "@/components/dashboard/donut-card";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import { BarListCard, type BarRow } from "@/components/dashboard/bar-list-card";
 
 export const dynamic = "force-dynamic";

@@ -2,17 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-// Paleta fija para las gráficas (no cambia con el tema claro/oscuro):
-// en visualización de datos conviene que el color de "prioridad alta"
-// sea siempre el mismo rojo, se vea como se vea el resto de la pantalla.
-export const CHART_COLORS = {
-  accent: "#3B63D9",
-  success: "#1F9D6B",
-  warning: "#E2960F",
-  danger: "#DC3B3B",
-  neutral: "#9AA1AE",
-};
+import { CHART_COLORS } from "@/lib/chart-colors";
 
 export interface DonutSlice {
   label: string;
