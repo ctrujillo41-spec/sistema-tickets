@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { slaCountFilter } from "@/lib/sla";
+import { STATUS_LABELS, STATUS_TONE } from "@/lib/tickets";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -48,59 +50,83 @@ export default async function DashboardPage() {
       .limit(5),
   ]);
 
-  const KPIS = [
-    { label: "Abiertos", value: abiertos.count ?? 0, icon: Inbox, tone: "accent" as const },
-    { label: "Cerrados (mes)", value: cerradosMes.count ?? 0, icon: CheckCircle2, tone: "success" as const },
-    { label: "Pendientes", value: pendientes.count ?? 0, icon: Clock, tone: "warning" as const },
-    { label: "Vencidos", value: vencidos.count ?? 0, icon: AlertTriangle, tone: "danger" as const },
-    { label: "Críticos", value: criticos.count ?? 0, icon: Flame, tone: "danger" as const },
+  const KPIS: {
+    label: string;
+    value: number;
+    icon: typeof Inbox;
+    tinted: "warning" | "danger" | null;
+  }[] = [
+    { label: "Abiertos", value: abiertos.count ?? 0, icon: Inbox, tinted: null },
+    { label: "Cerrados este mes", value: cerradosMes.count ?? 0, icon: CheckCircle2, tinted: null },
+    { label: "Pendientes", value: pendientes.count ?? 0, icon: Clock, tinted: "warning" },
+    { label: "Vencidos", value: vencidos.count ?? 0, icon: AlertTriangle, tinted: "danger" },
+    { label: "Críticos", value: criticos.count ?? 0, icon: Flame, tinted: "danger" },
   ];
+
+  const TINT_CARD: Record<string, string> = {
+    warning: "bg-warning/10 border-warning/20",
+    danger: "bg-danger/10 border-danger/20",
+  };
+  const TINT_TEXT: Record<string, string> = {
+    warning: "text-warning",
+    danger: "text-danger",
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold">Hola, {profile?.full_name || profile?.email}</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Hola, {profile?.full_name || profile?.email}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Conectado como <Badge tone="accent">{roleLabel}</Badge>
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {KPIS.map(({ label, value, icon: Icon, tone }) => (
-          <Card key={label}>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-0">
-              <CardTitle>{label}</CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold">{value}</div>
-              <Badge tone={tone} className="mt-2">
-                Actualizado ahora
-              </Badge>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {KPIS.map(({ label, value, icon: Icon, tinted }) => (
+          <div
+            key={label}
+            className={cn(
+              "rounded-xl border p-4",
+              tinted ? TINT_CARD[tinted] : "border-border bg-card"
+            )}
+          >
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Icon className={cn("h-3.5 w-3.5", tinted && TINT_TEXT[tinted])} />
+              {label}
+            </div>
+            <div className={cn("mt-1.5 text-2xl font-semibold", tinted && TINT_TEXT[tinted])}>
+              {value}
+            </div>
+          </div>
         ))}
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Tickets recientes</CardTitle>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm font-medium text-foreground">Tickets recientes</CardTitle>
+          <Link href="/dashboard/tickets" className="text-xs font-medium text-accent hover:underline">
+            Ver todos
+          </Link>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-1 text-sm">
           {recientes.data?.map((t) => (
             <Link
               key={t.id}
               href={`/dashboard/tickets/${t.id}`}
-              className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted"
+              className="flex items-center justify-between rounded-md px-2 py-2 transition-colors hover:bg-muted"
             >
-              <span>
-                #{t.ticket_number} · {t.subject}
+              <span className="truncate">
+                <span className="text-muted-foreground">#{t.ticket_number}</span> · {t.subject}
               </span>
-              <span className="text-xs text-muted-foreground">{t.status}</span>
+              <Badge tone={STATUS_TONE[t.status] ?? "neutral"} className="ml-3 shrink-0">
+                {STATUS_LABELS[t.status] ?? t.status}
+              </Badge>
             </Link>
           ))}
           {(!recientes.data || recientes.data.length === 0) && (
-            <p className="text-muted-foreground">
+            <p className="py-6 text-center text-muted-foreground">
               No hay tickets todavía.{" "}
               <Link href="/dashboard/tickets/new" className="text-accent hover:underline">
                 Crea el primero

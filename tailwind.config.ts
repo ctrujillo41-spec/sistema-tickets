@@ -30,7 +30,8 @@ const config: Config = {
         danger: "hsl(var(--danger))",
       },
       borderRadius: {
-        lg: "10px",
+        xl: "14px",
+        lg: "12px",
         md: "8px",
         sm: "6px",
       },
