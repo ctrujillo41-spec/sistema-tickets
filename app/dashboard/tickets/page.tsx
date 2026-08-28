@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { STATUS_LABELS, STATUS_TONE, PRIORITY_LABELS, PRIORITY_TONE } from "@/lib/tickets";
 import { isOverdue } from "@/lib/sla";
 
@@ -32,18 +33,20 @@ export default async function TicketsPage() {
   // RLS decide qué filas ve cada quien (sección 4.4 del documento de
   // arquitectura): el usuario final solo las suyas, el agente las de
   // su departamento o asignadas, el admin todas.
-  const { data, error } = await supabase
-    .from("tickets")
-    .select(
-      `id, ticket_number, subject, status, priority, created_at,
-       sla_response_due, sla_resolution_due, first_response_at, resolved_at,
-       company:companies(name),
-       department:departments(name),
-       requester:profiles!tickets_requester_id_fkey(full_name),
-       agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
-    )
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const { data, error } = await withJwtSkewRetry(() =>
+    supabase
+      .from("tickets")
+      .select(
+        `id, ticket_number, subject, status, priority, created_at,
+         sla_response_due, sla_resolution_due, first_response_at, resolved_at,
+         company:companies(name),
+         department:departments(name),
+         requester:profiles!tickets_requester_id_fkey(full_name),
+         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
+      )
+      .order("created_at", { ascending: false })
+      .limit(100)
+  );
 
   const tickets = data as unknown as TicketListRow[] | null;
 

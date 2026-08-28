@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { STATUS_LABELS, STATUS_TONE, PRIORITY_LABELS, PRIORITY_TONE } from "@/lib/tickets";
 import { isOverdue } from "@/lib/sla";
 import { TicketStatusControls } from "@/components/tickets/ticket-status-controls";
@@ -40,21 +41,23 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
   const profile = await getCurrentProfile();
   const supabase = createClient();
 
-  const { data: ticketRaw } = await supabase
-    .from("tickets")
-    .select(
-      `id, ticket_number, subject, description, status, priority, created_at,
-       requester_id, assigned_agent_id, company_id, csat_rating,
-       sla_response_due, sla_resolution_due, first_response_at, resolved_at,
-       company:companies(name),
-       department:departments(name),
-       category:categories(name),
-       subcategory:subcategories(name),
-       requester:profiles!tickets_requester_id_fkey(full_name, email),
-       agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
-    )
-    .eq("id", params.id)
-    .single();
+  const { data: ticketRaw } = await withJwtSkewRetry(() =>
+    supabase
+      .from("tickets")
+      .select(
+        `id, ticket_number, subject, description, status, priority, created_at,
+         requester_id, assigned_agent_id, company_id, csat_rating,
+         sla_response_due, sla_resolution_due, first_response_at, resolved_at,
+         company:companies(name),
+         department:departments(name),
+         category:categories(name),
+         subcategory:subcategories(name),
+         requester:profiles!tickets_requester_id_fkey(full_name, email),
+         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
+      )
+      .eq("id", params.id)
+      .single()
+  );
 
   if (!ticketRaw) notFound();
   const ticket = ticketRaw as unknown as TicketDetail;
@@ -64,27 +67,37 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
 
   const [{ data: commentsRaw }, { data: attachmentsRaw }, { data: historyRaw }, { data: agentsRaw }, { data: companiesRaw }] =
     await Promise.all([
-      supabase
-        .from("ticket_comments")
-        .select("id, body, is_internal, created_at, author:profiles!ticket_comments_author_id_fkey(full_name, role)")
-        .eq("ticket_id", params.id)
-        .order("created_at"),
-      supabase
-        .from("ticket_attachments")
-        .select("id, file_name, file_path, created_at, uploader:profiles!ticket_attachments_uploaded_by_fkey(full_name)")
-        .eq("ticket_id", params.id)
-        .order("created_at"),
-      supabase
-        .from("ticket_history")
-        .select("id, field_name, old_value, new_value, created_at, actor:profiles!ticket_history_changed_by_fkey(full_name)")
-        .eq("ticket_id", params.id)
-        .order("created_at", { ascending: false }),
+      withJwtSkewRetry(() =>
+        supabase
+          .from("ticket_comments")
+          .select("id, body, is_internal, created_at, author:profiles!ticket_comments_author_id_fkey(full_name, role)")
+          .eq("ticket_id", params.id)
+          .order("created_at")
+      ),
+      withJwtSkewRetry(() =>
+        supabase
+          .from("ticket_attachments")
+          .select("id, file_name, file_path, created_at, uploader:profiles!ticket_attachments_uploaded_by_fkey(full_name)")
+          .eq("ticket_id", params.id)
+          .order("created_at")
+      ),
+      withJwtSkewRetry(() =>
+        supabase
+          .from("ticket_history")
+          .select("id, field_name, old_value, new_value, created_at, actor:profiles!ticket_history_changed_by_fkey(full_name)")
+          .eq("ticket_id", params.id)
+          .order("created_at", { ascending: false })
+      ),
       isStaff
-        ? supabase.from("profiles").select("id, full_name").in("role", ["admin", "agent"]).eq("is_active", true).order("full_name")
-        : Promise.resolve({ data: [] }),
+        ? withJwtSkewRetry(() =>
+            supabase.from("profiles").select("id, full_name").in("role", ["admin", "agent"]).eq("is_active", true).order("full_name")
+          )
+        : Promise.resolve({ data: [], error: null }),
       isAdmin
-        ? supabase.from("companies").select("id, name").eq("is_active", true).order("name")
-        : Promise.resolve({ data: [] }),
+        ? withJwtSkewRetry(() =>
+            supabase.from("companies").select("id, name").eq("is_active", true).order("name")
+          )
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
   return (

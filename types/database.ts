@@ -12,7 +12,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -380,6 +380,165 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_categorias: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      proyecto_tiempos: {
+        Row: {
+          created_at: string
+          fecha: string
+          horas: number
+          id: string
+          nota: string | null
+          proyecto_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fecha?: string
+          horas: number
+          id?: string
+          nota?: string | null
+          proyecto_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          fecha?: string
+          horas?: number
+          id?: string
+          nota?: string | null
+          proyecto_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_tiempos_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_tiempos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyectos: {
+        Row: {
+          categoria_id: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          descripcion: string | null
+          fecha_cierre: string | null
+          fecha_inicio: string | null
+          fecha_objetivo: string | null
+          folio: number
+          id: string
+          nombre: string
+          priority: string
+          responsable_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          descripcion?: string | null
+          fecha_cierre?: string | null
+          fecha_inicio?: string | null
+          fecha_objetivo?: string | null
+          folio?: never
+          id?: string
+          nombre: string
+          priority?: string
+          responsable_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          descripcion?: string | null
+          fecha_cierre?: string | null
+          fecha_inicio?: string | null
+          fecha_objetivo?: string | null
+          folio?: never
+          id?: string
+          nombre?: string
+          priority?: string
+          responsable_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyectos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyectos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyectos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyectos_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyectos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

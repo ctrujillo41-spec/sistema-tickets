@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { slaCountFilter } from "@/lib/sla";
 import {
   STATUS_LABELS,
@@ -40,34 +41,52 @@ export default async function DashboardPage() {
   const nowIso = new Date().toISOString();
 
   const [abiertos, cerradosMes, pendientes, vencidos, criticos, recientes] = await Promise.all([
-    supabase.from("tickets").select("id", { count: "exact", head: true }).not("status", "in", "(cerrado)"),
-    supabase
-      .from("tickets")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "cerrado")
-      .gte("closed_at", startOfMonth.toISOString()),
-    supabase.from("tickets").select("id", { count: "exact", head: true }).eq("status", "pendiente_info"),
-    supabase
-      .from("tickets")
-      .select("id", { count: "exact", head: true })
-      .not("status", "in", "(resuelto,cerrado)")
-      .or(slaCountFilter(nowIso)),
-    supabase.from("tickets").select("id", { count: "exact", head: true }).eq("priority", "critica").not("status", "in", "(cerrado)"),
-    supabase
-      .from("tickets")
-      .select("id, ticket_number, subject, status")
-      .order("created_at", { ascending: false })
-      .limit(5),
+    withJwtSkewRetry(() =>
+      supabase.from("tickets").select("id", { count: "exact", head: true }).not("status", "in", "(cerrado)")
+    ),
+    withJwtSkewRetry(() =>
+      supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "cerrado")
+        .gte("closed_at", startOfMonth.toISOString())
+    ),
+    withJwtSkewRetry(() =>
+      supabase.from("tickets").select("id", { count: "exact", head: true }).eq("status", "pendiente_info")
+    ),
+    withJwtSkewRetry(() =>
+      supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .not("status", "in", "(resuelto,cerrado)")
+        .or(slaCountFilter(nowIso))
+    ),
+    withJwtSkewRetry(() =>
+      supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("priority", "critica")
+        .not("status", "in", "(cerrado)")
+    ),
+    withJwtSkewRetry(() =>
+      supabase
+        .from("tickets")
+        .select("id, ticket_number, subject, status")
+        .order("created_at", { ascending: false })
+        .limit(5)
+    ),
   ]);
 
   // Datos para las gráficas: solo tickets abiertos (no cerrados), traemos
   // los campos mínimos y agregamos aquí mismo en el servidor — el volumen
   // de un helpdesk interno de PyME no justifica una vista/RPC aparte.
-  const { data: openForCharts } = await supabase
-    .from("tickets")
-    .select("priority, status, department:departments(name)")
-    .not("status", "in", "(cerrado)")
-    .limit(2000);
+  const { data: openForCharts } = await withJwtSkewRetry(() =>
+    supabase
+      .from("tickets")
+      .select("priority, status, department:departments(name)")
+      .not("status", "in", "(cerrado)")
+      .limit(2000)
+  );
 
   const priorityCounts = new Map<string, number>();
   const statusCounts = new Map<string, number>();

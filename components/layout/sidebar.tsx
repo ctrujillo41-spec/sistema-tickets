@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   LifeBuoy,
+  FolderKanban,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import type { Role } from "@/lib/auth";
 const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { href: "/dashboard", label: "Panel", icon: LayoutDashboard, roles: ["admin", "agent", "user"] },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "agent", "user"] },
+  { href: "/dashboard/proyectos", label: "Proyectos", icon: FolderKanban, roles: ["admin", "agent"] },
   {
     href: "/dashboard/knowledge-base",
     label: "Base de conocimiento",
