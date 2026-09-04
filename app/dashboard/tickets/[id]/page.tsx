@@ -29,12 +29,14 @@ interface TicketDetail {
   sla_resolution_due: string | null;
   first_response_at: string | null;
   resolved_at: string | null;
+  equipo_id: string | null;
   company: { name: string } | null;
   department: { name: string } | null;
   category: { name: string } | null;
   subcategory: { name: string } | null;
   requester: { full_name: string | null; email: string | null } | null;
   agent: { full_name: string | null } | null;
+  equipo: { folio: number; etiqueta: string } | null;
 }
 
 export default async function TicketDetailPage({ params }: { params: { id: string } }) {
@@ -46,14 +48,15 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
       .from("tickets")
       .select(
         `id, ticket_number, subject, description, status, priority, created_at,
-         requester_id, assigned_agent_id, company_id, csat_rating,
+         requester_id, assigned_agent_id, company_id, csat_rating, equipo_id,
          sla_response_due, sla_resolution_due, first_response_at, resolved_at,
          company:companies(name),
          department:departments(name),
          category:categories(name),
          subcategory:subcategories(name),
          requester:profiles!tickets_requester_id_fkey(full_name, email),
-         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
+         agent:profiles!tickets_assigned_agent_id_fkey(full_name),
+         equipo:equipos(folio, etiqueta)`
       )
       .eq("id", params.id)
       .single()
@@ -65,7 +68,7 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
   const isStaff = profile?.role === "admin" || profile?.role === "agent";
   const isAdmin = profile?.role === "admin";
 
-  const [{ data: commentsRaw }, { data: attachmentsRaw }, { data: historyRaw }, { data: agentsRaw }, { data: companiesRaw }] =
+  const [{ data: commentsRaw }, { data: attachmentsRaw }, { data: historyRaw }, { data: agentsRaw }, { data: companiesRaw }, { data: equiposRaw }] =
     await Promise.all([
       withJwtSkewRetry(() =>
         supabase
@@ -96,6 +99,11 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
       isAdmin
         ? withJwtSkewRetry(() =>
             supabase.from("companies").select("id, name").eq("is_active", true).order("name")
+          )
+        : Promise.resolve({ data: [], error: null }),
+      isStaff
+        ? withJwtSkewRetry(() =>
+            supabase.from("equipos").select("id, folio, etiqueta").order("folio")
           )
         : Promise.resolve({ data: [], error: null }),
     ]);
@@ -154,6 +162,16 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
                 <dt className="text-muted-foreground">Agente</dt>
                 <dd>{ticket.agent?.full_name ?? "Sin asignar"}</dd>
               </div>
+              {ticket.equipo && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Equipo</dt>
+                  <dd>
+                    <a href={`/dashboard/equipos/${ticket.equipo_id}`} className="text-accent hover:underline">
+                      #{ticket.equipo.folio} · {ticket.equipo.etiqueta}
+                    </a>
+                  </dd>
+                </div>
+              )}
               {ticket.sla_response_due && !ticket.first_response_at && (
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Respuesta límite</dt>
@@ -182,6 +200,8 @@ export default async function TicketDetailPage({ params }: { params: { id: strin
                 initialCompanyId={ticket.company_id}
                 companies={(companiesRaw as any) ?? []}
                 canEditCompany={isAdmin}
+                initialEquipoId={ticket.equipo_id}
+                equipos={(equiposRaw as any) ?? []}
               />
             </CardContent>
           </Card>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Tags, Landmark, ScrollText, DatabaseBackup, Timer, FolderKanban } from "lucide-react";
+import { Users, Building2, Tags, Landmark, ScrollText, DatabaseBackup, Timer, FolderKanban, Monitor } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth";
 
@@ -33,6 +33,12 @@ const SECTIONS = [
     title: "Tipos de proyecto",
     desc: "Catálogo de \"Tipo\" usado al crear proyectos",
     icon: FolderKanban,
+  },
+  {
+    href: "/dashboard/settings/equipo-categorias",
+    title: "Categorías de equipo",
+    desc: "PC, laptop, monitor, impresora… usado en el inventario",
+    icon: Monitor,
   },
   {
     href: "/dashboard/settings/sla",

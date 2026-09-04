@@ -19,6 +19,12 @@ interface Company {
   name: string;
 }
 
+interface Equipo {
+  id: string;
+  folio: number;
+  etiqueta: string;
+}
+
 export function TicketStatusControls({
   ticketId,
   initialStatus,
@@ -28,6 +34,8 @@ export function TicketStatusControls({
   initialCompanyId,
   companies,
   canEditCompany,
+  initialEquipoId,
+  equipos,
 }: {
   ticketId: string;
   initialStatus: string;
@@ -37,6 +45,8 @@ export function TicketStatusControls({
   initialCompanyId?: string | null;
   companies?: Company[];
   canEditCompany?: boolean;
+  initialEquipoId?: string | null;
+  equipos?: Equipo[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -45,6 +55,7 @@ export function TicketStatusControls({
   const [priority, setPriority] = useState(initialPriority);
   const [agentId, setAgentId] = useState(initialAgentId ?? "");
   const [companyId, setCompanyId] = useState(initialCompanyId ?? "");
+  const [equipoId, setEquipoId] = useState(initialEquipoId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,6 +153,28 @@ export function TicketStatusControls({
           {/* Solo el administrador reasigna empresa: es el dato clave para que los
               reportes por cliente salgan correctos, y a diferencia del agente
               asignado, un cambio equivocado aquí afecta reportes históricos. */}
+        </div>
+      )}
+
+      {equipos && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Equipo relacionado</label>
+          <Select
+            value={equipoId}
+            disabled={saving}
+            onChange={(e) => {
+              setEquipoId(e.target.value);
+              persist({ equipo_id: e.target.value || null });
+            }}
+            className="w-full"
+          >
+            <option value="">Sin especificar</option>
+            {equipos.map((eq) => (
+              <option key={eq.id} value={eq.id}>
+                #{eq.folio} · {eq.etiqueta}
+              </option>
+            ))}
+          </Select>
         </div>
       )}
 

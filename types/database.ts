@@ -215,6 +215,208 @@ export type Database = {
         }
         Relationships: []
       }
+      equipo_bitacora: {
+        Row: {
+          costo: number | null
+          created_at: string
+          descripcion: string
+          equipo_id: string
+          fecha: string
+          id: string
+          reportado_por: string | null
+          resolved_at: string | null
+          resuelto_por: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          costo?: number | null
+          created_at?: string
+          descripcion: string
+          equipo_id: string
+          fecha?: string
+          id?: string
+          reportado_por?: string | null
+          resolved_at?: string | null
+          resuelto_por?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          costo?: number | null
+          created_at?: string
+          descripcion?: string
+          equipo_id?: string
+          fecha?: string
+          id?: string
+          reportado_por?: string | null
+          resolved_at?: string | null
+          resuelto_por?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipo_bitacora_equipo_id_fkey"
+            columns: ["equipo_id"]
+            isOneToOne: false
+            referencedRelation: "equipos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipo_bitacora_reportado_por_fkey"
+            columns: ["reportado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipo_bitacora_resuelto_por_fkey"
+            columns: ["resuelto_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipo_categorias: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      equipos: {
+        Row: {
+          almacenamiento: string | null
+          asignado_a: string | null
+          categoria_id: string | null
+          company_id: string | null
+          costo_compra: number | null
+          cpu: string | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          etiqueta: string
+          fecha_compra: string | null
+          folio: number
+          id: string
+          marca: string | null
+          modelo: string | null
+          notas: string | null
+          numero_serie: string | null
+          proveedor: string | null
+          ram: string | null
+          sistema_operativo: string | null
+          status: string
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          almacenamiento?: string | null
+          asignado_a?: string | null
+          categoria_id?: string | null
+          company_id?: string | null
+          costo_compra?: number | null
+          cpu?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          etiqueta: string
+          fecha_compra?: string | null
+          folio?: never
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          notas?: string | null
+          numero_serie?: string | null
+          proveedor?: string | null
+          ram?: string | null
+          sistema_operativo?: string | null
+          status?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          almacenamiento?: string | null
+          asignado_a?: string | null
+          categoria_id?: string | null
+          company_id?: string | null
+          costo_compra?: number | null
+          cpu?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          etiqueta?: string
+          fecha_compra?: string | null
+          folio?: never
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          notas?: string | null
+          numero_serie?: string | null
+          proveedor?: string | null
+          ram?: string | null
+          sistema_operativo?: string | null
+          status?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipos_asignado_a_fkey"
+            columns: ["asignado_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "equipo_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipos_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kb_articles: {
         Row: {
           body: string
@@ -749,6 +951,7 @@ export type Database = {
           csat_rating: number | null
           department_id: string | null
           description: string
+          equipo_id: string | null
           first_response_at: string | null
           id: string
           priority: string
@@ -773,6 +976,7 @@ export type Database = {
           csat_rating?: number | null
           department_id?: string | null
           description: string
+          equipo_id?: string | null
           first_response_at?: string | null
           id?: string
           priority?: string
@@ -797,6 +1001,7 @@ export type Database = {
           csat_rating?: number | null
           department_id?: string | null
           description?: string
+          equipo_id?: string | null
           first_response_at?: string | null
           id?: string
           priority?: string
@@ -838,6 +1043,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_equipo_id_fkey"
+            columns: ["equipo_id"]
+            isOneToOne: false
+            referencedRelation: "equipos"
             referencedColumns: ["id"]
           },
           {
@@ -886,12 +1098,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -915,11 +1127,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -940,11 +1152,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -965,11 +1177,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -982,11 +1194,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

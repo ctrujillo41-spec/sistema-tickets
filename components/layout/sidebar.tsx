@@ -10,6 +10,7 @@ import {
   Settings,
   LifeBuoy,
   FolderKanban,
+  Monitor,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; ro
   { href: "/dashboard", label: "Panel", icon: LayoutDashboard, roles: ["admin", "agent", "user"] },
   { href: "/dashboard/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "agent", "user"] },
   { href: "/dashboard/proyectos", label: "Proyectos", icon: FolderKanban, roles: ["admin", "agent"] },
+  { href: "/dashboard/equipos", label: "Equipos", icon: Monitor, roles: ["admin", "agent"] },
   {
     href: "/dashboard/knowledge-base",
     label: "Base de conocimiento",
