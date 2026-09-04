@@ -18,7 +18,7 @@ export default async function EquiposPage() {
       supabase
         .from("equipos")
         .select(
-          `id, folio, etiqueta, marca, modelo, numero_serie, status, ubicacion,
+          `id, folio, etiqueta, marca, modelo, numero_serie, ip_address, status, ubicacion,
            categoria_id, company_id,
            categoria:equipo_categorias(name),
            company:companies(name),

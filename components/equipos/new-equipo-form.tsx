@@ -37,6 +37,7 @@ export function NewEquipoForm({
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [numeroSerie, setNumeroSerie] = useState("");
+  const [ipAddress, setIpAddress] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [asignadoA, setAsignadoA] = useState("");
@@ -76,6 +77,7 @@ export function NewEquipoForm({
         marca: marca.trim() || null,
         modelo: modelo.trim() || null,
         numero_serie: numeroSerie.trim() || null,
+        ip_address: ipAddress.trim() || null,
         company_id: companyId || null,
         department_id: departmentId || null,
         asignado_a: asignadoA || null,
@@ -140,6 +142,11 @@ export function NewEquipoForm({
           <label className="text-xs font-medium text-muted-foreground">Número de serie</label>
           <Input value={numeroSerie} onChange={(e) => setNumeroSerie(e.target.value)} />
         </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Dirección IP</label>
+          <Input value={ipAddress} onChange={(e) => setIpAddress(e.target.value)} placeholder="Ej. 192.168.1.50" />
+        </div>
+
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Estado</label>
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full">

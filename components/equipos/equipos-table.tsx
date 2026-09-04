@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { EQUIPO_STATUS_LABELS, EQUIPO_STATUS_ORDER, EQUIPO_STATUS_TONE } from "@/lib/equipos";
+import { EquiposExportButtons } from "@/components/equipos/equipos-export-buttons";
+import type { EquipoExportRow } from "@/lib/equipos-export";
 
 export interface EquipoListRow {
   id: string;
@@ -16,6 +18,7 @@ export interface EquipoListRow {
   marca: string | null;
   modelo: string | null;
   numero_serie: string | null;
+  ip_address: string | null;
   status: string;
   ubicacion: string | null;
   categoria_id: string | null;
@@ -53,7 +56,7 @@ export function EquiposTable({
       if (status && e.status !== status) return false;
       if (
         q &&
-        !`${e.etiqueta} ${e.marca ?? ""} ${e.modelo ?? ""} ${e.numero_serie ?? ""} ${e.asignado?.full_name ?? ""}`
+        !`${e.etiqueta} ${e.marca ?? ""} ${e.modelo ?? ""} ${e.numero_serie ?? ""} ${e.ip_address ?? ""} ${e.asignado?.full_name ?? ""}`
           .toLowerCase()
           .includes(q)
       )
@@ -62,8 +65,35 @@ export function EquiposTable({
     });
   }, [equipos, search, categoriaId, companyId, status]);
 
+  const exportRows: EquipoExportRow[] = useMemo(
+    () =>
+      filtered.map((e) => ({
+        folio: e.folio,
+        etiqueta: e.etiqueta,
+        categoria: e.categoria?.name ?? "",
+        marca: e.marca ?? "",
+        modelo: e.modelo ?? "",
+        numero_serie: e.numero_serie ?? "",
+        ip_address: e.ip_address ?? "",
+        status: e.status,
+        company: e.company?.name ?? "",
+        department: e.department?.name ?? "",
+        asignado: e.asignado?.full_name ?? "",
+        ubicacion: e.ubicacion ?? "",
+      })),
+    [filtered]
+  );
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} equipo{filtered.length === 1 ? "" : "s"}
+          {filtered.length !== equipos.length ? ` de ${equipos.length}` : ""}
+        </p>
+        <EquiposExportButtons rows={exportRows} />
+      </div>
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
         <Input
           value={search}
@@ -105,6 +135,7 @@ export function EquiposTable({
               <th className="px-3 py-2 font-medium">Etiqueta</th>
               <th className="px-3 py-2 font-medium">Categoría</th>
               <th className="px-3 py-2 font-medium">Marca / modelo</th>
+              <th className="px-3 py-2 font-medium">IP</th>
               <th className="px-3 py-2 font-medium">Empresa</th>
               <th className="px-3 py-2 font-medium">Asignado a</th>
               <th className="px-3 py-2 font-medium">Estado</th>
@@ -127,6 +158,7 @@ export function EquiposTable({
                 <td className="px-3 py-2 text-muted-foreground">
                   {[e.marca, e.modelo].filter(Boolean).join(" ") || "—"}
                 </td>
+                <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{e.ip_address ?? "—"}</td>
                 <td className="px-3 py-2 text-muted-foreground">{e.company?.name ?? "—"}</td>
                 <td className="px-3 py-2 text-muted-foreground">{e.asignado?.full_name ?? "Sin asignar"}</td>
                 <td className="px-3 py-2">

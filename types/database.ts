@@ -318,6 +318,7 @@ export type Database = {
           fecha_compra: string | null
           folio: number
           id: string
+          ip_address: string | null
           marca: string | null
           modelo: string | null
           notas: string | null
@@ -343,6 +344,7 @@ export type Database = {
           fecha_compra?: string | null
           folio?: never
           id?: string
+          ip_address?: string | null
           marca?: string | null
           modelo?: string | null
           notas?: string | null
@@ -368,6 +370,7 @@ export type Database = {
           fecha_compra?: string | null
           folio?: never
           id?: string
+          ip_address?: string | null
           marca?: string | null
           modelo?: string | null
           notas?: string | null

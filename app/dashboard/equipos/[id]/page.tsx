@@ -17,6 +17,7 @@ interface EquipoDetail {
   marca: string | null;
   modelo: string | null;
   numero_serie: string | null;
+  ip_address: string | null;
   status: string;
   ubicacion: string | null;
   cpu: string | null;
@@ -49,7 +50,7 @@ export default async function EquipoDetailPage({ params }: { params: { id: strin
     supabase
       .from("equipos")
       .select(
-        `id, folio, etiqueta, marca, modelo, numero_serie, status, ubicacion,
+        `id, folio, etiqueta, marca, modelo, numero_serie, ip_address, status, ubicacion,
          cpu, ram, almacenamiento, sistema_operativo, proveedor, fecha_compra, costo_compra, notas,
          asignado_a, created_at,
          categoria:equipo_categorias(name),
@@ -230,6 +231,7 @@ export default async function EquipoDetailPage({ params }: { params: { id: strin
               equipoId={equipo.id}
               initialStatus={equipo.status}
               initialAsignadoA={equipo.asignado_a}
+              initialIpAddress={equipo.ip_address}
               staff={(staffRaw as { id: string; full_name: string | null }[]) ?? []}
             />
           </CardContent>

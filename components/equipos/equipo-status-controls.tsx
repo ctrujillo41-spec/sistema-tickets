@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { EQUIPO_STATUS_LABELS, EQUIPO_STATUS_ORDER } from "@/lib/equipos";
 import type { TablesUpdate } from "@/types/database";
 
@@ -18,11 +19,13 @@ export function EquipoStatusControls({
   equipoId,
   initialStatus,
   initialAsignadoA,
+  initialIpAddress,
   staff,
 }: {
   equipoId: string;
   initialStatus: string;
   initialAsignadoA: string | null;
+  initialIpAddress?: string | null;
   staff: StaffOption[];
 }) {
   const router = useRouter();
@@ -30,6 +33,7 @@ export function EquipoStatusControls({
 
   const [status, setStatus] = useState(initialStatus);
   const [asignadoA, setAsignadoA] = useState(initialAsignadoA ?? "");
+  const [ipAddress, setIpAddress] = useState(initialIpAddress ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +88,21 @@ export function EquipoStatusControls({
             </option>
           ))}
         </Select>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Dirección IP</label>
+        <Input
+          value={ipAddress}
+          disabled={saving}
+          onChange={(e) => setIpAddress(e.target.value)}
+          onBlur={() => {
+            if ((ipAddress || null) !== (initialIpAddress ?? null)) {
+              persist({ ip_address: ipAddress.trim() || null });
+            }
+          }}
+          placeholder="Ej. 192.168.1.50"
+        />
       </div>
 
       {error && <p className="text-xs text-danger">{error}</p>}
