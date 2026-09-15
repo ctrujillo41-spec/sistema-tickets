@@ -305,8 +305,14 @@ export type Database = {
       }
       equipos: {
         Row: {
+          adaptador_red: string | null
+          administradores_locales: string | null
           almacenamiento: string | null
+          antivirus: string | null
           asignado_a: string | null
+          bateria: string | null
+          bitlocker: string | null
+          build_os: string | null
           categoria_id: string | null
           company_id: string | null
           costo_compra: number | null
@@ -314,25 +320,57 @@ export type Database = {
           created_at: string
           created_by: string | null
           department_id: string | null
+          diagnostico: string | null
+          disco_libre_gb: number | null
+          disco_libre_pct: number | null
+          disco_modelo: string | null
+          disco_total_gb: number | null
           etiqueta: string
           fecha_compra: string | null
+          firewall: string | null
           folio: number
+          gpu: string | null
+          hostname: string | null
           id: string
+          identidad_red: string | null
           ip_address: string | null
+          mac_address: string | null
           marca: string | null
           modelo: string | null
+          monitores: string | null
           notas: string | null
           numero_serie: string | null
+          office_activado: string | null
+          office_version: string | null
+          programas_instalados_count: number | null
           proveedor: string | null
           ram: string | null
+          ram_libre_gb: number | null
+          ram_libre_pct: number | null
+          ram_total_gb: number | null
+          salud_disco: string | null
+          secure_boot: string | null
           sistema_operativo: string | null
           status: string
+          top_programas: string | null
+          tpm: string | null
           ubicacion: string | null
+          ultimo_escaneo_at: string | null
+          ultimo_usuario_windows: string | null
           updated_at: string
+          uptime_dias: number | null
+          usuario_windows: string | null
+          windows_activado: string | null
         }
         Insert: {
+          adaptador_red?: string | null
+          administradores_locales?: string | null
           almacenamiento?: string | null
+          antivirus?: string | null
           asignado_a?: string | null
+          bateria?: string | null
+          bitlocker?: string | null
+          build_os?: string | null
           categoria_id?: string | null
           company_id?: string | null
           costo_compra?: number | null
@@ -340,25 +378,57 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department_id?: string | null
+          diagnostico?: string | null
+          disco_libre_gb?: number | null
+          disco_libre_pct?: number | null
+          disco_modelo?: string | null
+          disco_total_gb?: number | null
           etiqueta: string
           fecha_compra?: string | null
+          firewall?: string | null
           folio?: never
+          gpu?: string | null
+          hostname?: string | null
           id?: string
+          identidad_red?: string | null
           ip_address?: string | null
+          mac_address?: string | null
           marca?: string | null
           modelo?: string | null
+          monitores?: string | null
           notas?: string | null
           numero_serie?: string | null
+          office_activado?: string | null
+          office_version?: string | null
+          programas_instalados_count?: number | null
           proveedor?: string | null
           ram?: string | null
+          ram_libre_gb?: number | null
+          ram_libre_pct?: number | null
+          ram_total_gb?: number | null
+          salud_disco?: string | null
+          secure_boot?: string | null
           sistema_operativo?: string | null
           status?: string
+          top_programas?: string | null
+          tpm?: string | null
           ubicacion?: string | null
+          ultimo_escaneo_at?: string | null
+          ultimo_usuario_windows?: string | null
           updated_at?: string
+          uptime_dias?: number | null
+          usuario_windows?: string | null
+          windows_activado?: string | null
         }
         Update: {
+          adaptador_red?: string | null
+          administradores_locales?: string | null
           almacenamiento?: string | null
+          antivirus?: string | null
           asignado_a?: string | null
+          bateria?: string | null
+          bitlocker?: string | null
+          build_os?: string | null
           categoria_id?: string | null
           company_id?: string | null
           costo_compra?: number | null
@@ -366,21 +436,47 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department_id?: string | null
+          diagnostico?: string | null
+          disco_libre_gb?: number | null
+          disco_libre_pct?: number | null
+          disco_modelo?: string | null
+          disco_total_gb?: number | null
           etiqueta?: string
           fecha_compra?: string | null
+          firewall?: string | null
           folio?: never
+          gpu?: string | null
+          hostname?: string | null
           id?: string
+          identidad_red?: string | null
           ip_address?: string | null
+          mac_address?: string | null
           marca?: string | null
           modelo?: string | null
+          monitores?: string | null
           notas?: string | null
           numero_serie?: string | null
+          office_activado?: string | null
+          office_version?: string | null
+          programas_instalados_count?: number | null
           proveedor?: string | null
           ram?: string | null
+          ram_libre_gb?: number | null
+          ram_libre_pct?: number | null
+          ram_total_gb?: number | null
+          salud_disco?: string | null
+          secure_boot?: string | null
           sistema_operativo?: string | null
           status?: string
+          top_programas?: string | null
+          tpm?: string | null
           ubicacion?: string | null
+          ultimo_escaneo_at?: string | null
+          ultimo_usuario_windows?: string | null
           updated_at?: string
+          uptime_dias?: number | null
+          usuario_windows?: string | null
+          windows_activado?: string | null
         }
         Relationships: [
           {

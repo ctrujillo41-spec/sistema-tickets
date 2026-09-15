@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -43,12 +43,20 @@ export default async function EquiposPage() {
             Inventario de equipos de cómputo y su bitácora de daños, consumibles y mejoras.
           </p>
         </div>
-        <Link href="/dashboard/equipos/nuevo">
-          <Button>
-            <Plus className="h-4 w-4" />
-            Nuevo equipo
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/equipos/importar">
+            <Button variant="outline">
+              <UploadCloud className="h-4 w-4" />
+              Importar CSV
+            </Button>
+          </Link>
+          <Link href="/dashboard/equipos/nuevo">
+            <Button>
+              <Plus className="h-4 w-4" />
+              Nuevo equipo
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {error && <p className="text-sm text-danger">No se pudieron cargar los equipos: {error.message}</p>}
