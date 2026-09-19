@@ -15,18 +15,37 @@ interface StaffOption {
   full_name: string | null;
 }
 
+interface NamedOption {
+  id: string;
+  name: string;
+}
+
 export function EquipoStatusControls({
   equipoId,
   initialStatus,
   initialAsignadoA,
   initialIpAddress,
+  initialCategoriaId,
+  initialCompanyId,
+  initialDepartmentId,
+  initialUbicacion,
   staff,
+  categorias,
+  companies,
+  departments,
 }: {
   equipoId: string;
   initialStatus: string;
   initialAsignadoA: string | null;
   initialIpAddress?: string | null;
+  initialCategoriaId?: string | null;
+  initialCompanyId?: string | null;
+  initialDepartmentId?: string | null;
+  initialUbicacion?: string | null;
   staff: StaffOption[];
+  categorias?: NamedOption[];
+  companies?: NamedOption[];
+  departments?: NamedOption[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -34,6 +53,10 @@ export function EquipoStatusControls({
   const [status, setStatus] = useState(initialStatus);
   const [asignadoA, setAsignadoA] = useState(initialAsignadoA ?? "");
   const [ipAddress, setIpAddress] = useState(initialIpAddress ?? "");
+  const [categoriaId, setCategoriaId] = useState(initialCategoriaId ?? "");
+  const [companyId, setCompanyId] = useState(initialCompanyId ?? "");
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId ?? "");
+  const [ubicacion, setUbicacion] = useState(initialUbicacion ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +91,87 @@ export function EquipoStatusControls({
             </option>
           ))}
         </Select>
+      </div>
+
+      {categorias && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Categoría</label>
+          <Select
+            value={categoriaId}
+            disabled={saving}
+            onChange={(e) => {
+              setCategoriaId(e.target.value);
+              persist({ categoria_id: e.target.value || null });
+            }}
+            className="w-full"
+          >
+            <option value="">Sin especificar</option>
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      {companies && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Empresa</label>
+          <Select
+            value={companyId}
+            disabled={saving}
+            onChange={(e) => {
+              setCompanyId(e.target.value);
+              persist({ company_id: e.target.value || null });
+            }}
+            className="w-full"
+          >
+            <option value="">Interno / sin especificar</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      {departments && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Departamento</label>
+          <Select
+            value={departmentId}
+            disabled={saving}
+            onChange={(e) => {
+              setDepartmentId(e.target.value);
+              persist({ department_id: e.target.value || null });
+            }}
+            className="w-full"
+          >
+            <option value="">Sin especificar</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Ubicación</label>
+        <Input
+          value={ubicacion}
+          disabled={saving}
+          onChange={(e) => setUbicacion(e.target.value)}
+          onBlur={() => {
+            if ((ubicacion || null) !== (initialUbicacion ?? null)) {
+              persist({ ubicacion: ubicacion.trim() || null });
+            }
+          }}
+          placeholder="Ej. Oficina Aguascalientes, piso 2"
+        />
       </div>
 
       <div className="space-y-1">

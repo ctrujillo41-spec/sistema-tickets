@@ -30,6 +30,9 @@ interface EquipoDetail {
   costo_compra: number | null;
   notas: string | null;
   asignado_a: string | null;
+  categoria_id: string | null;
+  company_id: string | null;
+  department_id: string | null;
   created_at: string;
   hostname: string | null;
   usuario_windows: string | null;
@@ -85,7 +88,7 @@ export default async function EquipoDetailPage({ params }: { params: { id: strin
       .select(
         `id, folio, etiqueta, marca, modelo, numero_serie, ip_address, status, ubicacion,
          cpu, ram, almacenamiento, sistema_operativo, proveedor, fecha_compra, costo_compra, notas,
-         asignado_a, created_at,
+         asignado_a, categoria_id, company_id, department_id, created_at,
          hostname, usuario_windows, ultimo_usuario_windows, mac_address, adaptador_red, gpu,
          ram_total_gb, ram_libre_gb, ram_libre_pct,
          disco_modelo, disco_total_gb, disco_libre_gb, disco_libre_pct, salud_disco,
@@ -105,27 +108,31 @@ export default async function EquipoDetailPage({ params }: { params: { id: strin
   if (!equipoRaw) notFound();
   const equipo = equipoRaw as unknown as EquipoDetail;
 
-  const [{ data: bitacoraRaw }, { data: staffRaw }, { data: ticketsRaw }] = await Promise.all([
-    withJwtSkewRetry(() =>
-      supabase
-        .from("equipo_bitacora")
-        .select(
-          `id, tipo, descripcion, status, costo, fecha,
-           reportado_por:profiles!equipo_bitacora_reportado_por_fkey(full_name),
-           resuelto_por:profiles!equipo_bitacora_resuelto_por_fkey(full_name)`
-        )
-        .eq("equipo_id", params.id)
-        .order("fecha", { ascending: false })
-    ),
-    withJwtSkewRetry(() => supabase.from("profiles").select("id, full_name").eq("is_active", true).order("full_name")),
-    withJwtSkewRetry(() =>
-      supabase
-        .from("tickets")
-        .select("id, ticket_number, subject, status")
-        .eq("equipo_id", params.id)
-        .order("created_at", { ascending: false })
-    ),
-  ]);
+  const [{ data: bitacoraRaw }, { data: staffRaw }, { data: ticketsRaw }, { data: categoriasRaw }, { data: companiesRaw }, { data: departmentsRaw }] =
+    await Promise.all([
+      withJwtSkewRetry(() =>
+        supabase
+          .from("equipo_bitacora")
+          .select(
+            `id, tipo, descripcion, status, costo, fecha,
+             reportado_por:profiles!equipo_bitacora_reportado_por_fkey(full_name),
+             resuelto_por:profiles!equipo_bitacora_resuelto_por_fkey(full_name)`
+          )
+          .eq("equipo_id", params.id)
+          .order("fecha", { ascending: false })
+      ),
+      withJwtSkewRetry(() => supabase.from("profiles").select("id, full_name").eq("is_active", true).order("full_name")),
+      withJwtSkewRetry(() =>
+        supabase
+          .from("tickets")
+          .select("id, ticket_number, subject, status")
+          .eq("equipo_id", params.id)
+          .order("created_at", { ascending: false })
+      ),
+      withJwtSkewRetry(() => supabase.from("equipo_categorias").select("id, name").eq("is_active", true).order("name")),
+      withJwtSkewRetry(() => supabase.from("companies").select("id, name").eq("is_active", true).order("name")),
+      withJwtSkewRetry(() => supabase.from("departments").select("id, name").eq("is_active", true).order("name")),
+    ]);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -443,7 +450,14 @@ export default async function EquipoDetailPage({ params }: { params: { id: strin
               initialStatus={equipo.status}
               initialAsignadoA={equipo.asignado_a}
               initialIpAddress={equipo.ip_address}
+              initialCategoriaId={equipo.categoria_id}
+              initialCompanyId={equipo.company_id}
+              initialDepartmentId={equipo.department_id}
+              initialUbicacion={equipo.ubicacion}
               staff={(staffRaw as { id: string; full_name: string | null }[]) ?? []}
+              categorias={categoriasRaw ?? []}
+              companies={companiesRaw ?? []}
+              departments={departmentsRaw ?? []}
             />
           </CardContent>
         </Card>
