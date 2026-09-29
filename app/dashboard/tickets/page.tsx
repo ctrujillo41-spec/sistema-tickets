@@ -7,8 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { STATUS_LABELS, STATUS_TONE, PRIORITY_LABELS, PRIORITY_TONE } from "@/lib/tickets";
 import { isOverdue } from "@/lib/sla";
+import { TicketsPagination } from "@/components/tickets/tickets-pagination";
 
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZES = [10, 20, 50, 100];
+const DEFAULT_PAGE_SIZE = 10;
 
 interface TicketListRow {
   id: string;
@@ -27,13 +31,25 @@ interface TicketListRow {
   agent: { full_name: string | null } | null;
 }
 
-export default async function TicketsPage() {
+export default async function TicketsPage({
+  searchParams,
+}: {
+  searchParams: { page?: string; pageSize?: string };
+}) {
   const supabase = createClient();
+
+  const pageSize = PAGE_SIZES.includes(Number(searchParams.pageSize))
+    ? Number(searchParams.pageSize)
+    : DEFAULT_PAGE_SIZE;
+  const requestedPage = Math.max(1, Number(searchParams.page) || 1);
+
+  const from = (requestedPage - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   // RLS decide qué filas ve cada quien (sección 4.4 del documento de
   // arquitectura): el usuario final solo las suyas, el agente las de
   // su departamento o asignadas, el admin todas.
-  const { data, error } = await withJwtSkewRetry(() =>
+  const { data, error, count } = await withJwtSkewRetry(() =>
     supabase
       .from("tickets")
       .select(
@@ -42,13 +58,17 @@ export default async function TicketsPage() {
          company:companies(name),
          department:departments(name),
          requester:profiles!tickets_requester_id_fkey(full_name),
-         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`
+         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`,
+        { count: "exact" }
       )
       .order("created_at", { ascending: false })
-      .limit(100)
+      .range(from, to)
   );
 
   const tickets = data as unknown as TicketListRow[] | null;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, totalPages);
 
   return (
     <div className="space-y-6">
@@ -56,7 +76,7 @@ export default async function TicketsPage() {
         <div>
           <h1 className="text-lg font-semibold">Tickets</h1>
           <p className="text-sm text-muted-foreground">
-            {tickets?.length ?? 0} ticket{tickets?.length === 1 ? "" : "s"} visibles para tu rol.
+            {total} ticket{total === 1 ? "" : "s"} visibles para tu rol.
           </p>
         </div>
         <Link href="/dashboard/tickets/new">
@@ -130,6 +150,7 @@ export default async function TicketsPage() {
             </CardContent>
           </Card>
         )}
+        {total > 0 && <TicketsPagination total={total} page={page} pageSize={pageSize} />}
       </div>
     </div>
   );

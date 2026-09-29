@@ -215,6 +215,108 @@ export type Database = {
         }
         Relationships: []
       }
+      dominios: {
+        Row: {
+          auto_renovacion: boolean
+          ciclo_renovacion: string
+          company_id: string | null
+          correo_notificaciones: string | null
+          costo_renovacion: number | null
+          created_at: string
+          estado: string
+          fecha_registro: string | null
+          fecha_vencimiento: string | null
+          fecha_vencimiento_ssl: string | null
+          id: string
+          moneda: string
+          nombre_dominio: string
+          notas: string | null
+          password_hosting: string | null
+          password_registrador: string | null
+          proveedor_hosting: string | null
+          proveedor_ssl: string | null
+          registrador: string | null
+          responsable_id: string | null
+          servidor_dns: string | null
+          tiene_sitio_web: boolean
+          updated_at: string
+          url_sitio: string | null
+          usuario_hosting: string | null
+          usuario_registrador: string | null
+        }
+        Insert: {
+          auto_renovacion?: boolean
+          ciclo_renovacion?: string
+          company_id?: string | null
+          correo_notificaciones?: string | null
+          costo_renovacion?: number | null
+          created_at?: string
+          estado?: string
+          fecha_registro?: string | null
+          fecha_vencimiento?: string | null
+          fecha_vencimiento_ssl?: string | null
+          id?: string
+          moneda?: string
+          nombre_dominio: string
+          notas?: string | null
+          password_hosting?: string | null
+          password_registrador?: string | null
+          proveedor_hosting?: string | null
+          proveedor_ssl?: string | null
+          registrador?: string | null
+          responsable_id?: string | null
+          servidor_dns?: string | null
+          tiene_sitio_web?: boolean
+          updated_at?: string
+          url_sitio?: string | null
+          usuario_hosting?: string | null
+          usuario_registrador?: string | null
+        }
+        Update: {
+          auto_renovacion?: boolean
+          ciclo_renovacion?: string
+          company_id?: string | null
+          correo_notificaciones?: string | null
+          costo_renovacion?: number | null
+          created_at?: string
+          estado?: string
+          fecha_registro?: string | null
+          fecha_vencimiento?: string | null
+          fecha_vencimiento_ssl?: string | null
+          id?: string
+          moneda?: string
+          nombre_dominio?: string
+          notas?: string | null
+          password_hosting?: string | null
+          password_registrador?: string | null
+          proveedor_hosting?: string | null
+          proveedor_ssl?: string | null
+          registrador?: string | null
+          responsable_id?: string | null
+          servidor_dns?: string | null
+          tiene_sitio_web?: boolean
+          updated_at?: string
+          url_sitio?: string | null
+          usuario_hosting?: string | null
+          usuario_registrador?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dominios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dominios_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipo_bitacora: {
         Row: {
           costo: number | null
