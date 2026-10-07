@@ -8,6 +8,8 @@ import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { STATUS_LABELS, STATUS_TONE, PRIORITY_LABELS, PRIORITY_TONE } from "@/lib/tickets";
 import { isOverdue } from "@/lib/sla";
 import { TicketsPagination } from "@/components/tickets/tickets-pagination";
+import { SortableTh } from "@/components/ui/sortable-th";
+import { parseSort, sortHref } from "@/lib/sort";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +33,34 @@ interface TicketListRow {
   agent: { full_name: string | null } | null;
 }
 
+// Columna de la UI -> expresión de orden de PostgREST. Las columnas de
+// tablas relacionadas usan la sintaxis `relacion(columna)`.
+const SORT_COLUMNS: Record<string, string> = {
+  ticket_number: "ticket_number",
+  subject: "subject",
+  company: "company(name)",
+  department: "department(name)",
+  priority: "priority",
+  status: "status",
+  agent: "agent(full_name)",
+  created_at: "created_at",
+};
+
 export default async function TicketsPage({
   searchParams,
 }: {
-  searchParams: { page?: string; pageSize?: string };
+  searchParams: { page?: string; pageSize?: string; sort?: string; dir?: string };
 }) {
   const supabase = createClient();
+  const currentSort = parseSort(searchParams, Object.keys(SORT_COLUMNS), "created_at", "desc");
+  const th = (field: string, label: string) => (
+    <SortableTh
+      label={label}
+      active={currentSort.sort === field}
+      dir={currentSort.dir}
+      href={sortHref("/dashboard/tickets", searchParams, field, currentSort)}
+    />
+  );
 
   const pageSize = PAGE_SIZES.includes(Number(searchParams.pageSize))
     ? Number(searchParams.pageSize)
@@ -49,21 +73,30 @@ export default async function TicketsPage({
   // RLS decide qué filas ve cada quien (sección 4.4 del documento de
   // arquitectura): el usuario final solo las suyas, el agente las de
   // su departamento o asignadas, el admin todas.
-  const { data, error, count } = await withJwtSkewRetry(() =>
-    supabase
-      .from("tickets")
-      .select(
-        `id, ticket_number, subject, status, priority, created_at,
-         sla_response_due, sla_resolution_due, first_response_at, resolved_at,
-         company:companies(name),
-         department:departments(name),
-         requester:profiles!tickets_requester_id_fkey(full_name),
-         agent:profiles!tickets_assigned_agent_id_fkey(full_name)`,
-        { count: "exact" }
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to)
-  );
+  const fetchPage = (orderBy: string, ascending: boolean) =>
+    withJwtSkewRetry(() =>
+      supabase
+        .from("tickets")
+        .select(
+          `id, ticket_number, subject, status, priority, created_at,
+           sla_response_due, sla_resolution_due, first_response_at, resolved_at,
+           company:companies(name),
+           department:departments(name),
+           requester:profiles!tickets_requester_id_fkey(full_name),
+           agent:profiles!tickets_assigned_agent_id_fkey(full_name)`,
+          { count: "exact" }
+        )
+        .order(orderBy, { ascending, nullsFirst: false })
+        // Desempate estable para que la paginación no repita ni omita filas.
+        .order("ticket_number", { ascending: false })
+        .range(from, to)
+    );
+
+  let { data, error, count } = await fetchPage(SORT_COLUMNS[currentSort.sort], currentSort.dir === "asc");
+  if (error && SORT_COLUMNS[currentSort.sort].includes("(")) {
+    // Si el orden por columna relacionada falla, cae al orden por defecto.
+    ({ data, error, count } = await fetchPage("created_at", false));
+  }
 
   const tickets = data as unknown as TicketListRow[] | null;
   const total = count ?? 0;
@@ -93,14 +126,14 @@ export default async function TicketsPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">Asunto</th>
-              <th className="px-3 py-2 font-medium">Empresa</th>
-              <th className="px-3 py-2 font-medium">Departamento</th>
-              <th className="px-3 py-2 font-medium">Prioridad</th>
-              <th className="px-3 py-2 font-medium">Estado</th>
-              <th className="px-3 py-2 font-medium">Agente</th>
-              <th className="px-3 py-2 font-medium">Creado</th>
+              {th("ticket_number", "#")}
+              {th("subject", "Asunto")}
+              {th("company", "Empresa")}
+              {th("department", "Departamento")}
+              {th("priority", "Prioridad")}
+              {th("status", "Estado")}
+              {th("agent", "Agente")}
+              {th("created_at", "Creado")}
             </tr>
           </thead>
           <tbody>

@@ -9,6 +9,8 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { EQUIPO_STATUS_LABELS, EQUIPO_STATUS_ORDER, EQUIPO_STATUS_TONE } from "@/lib/equipos";
 import { EquiposExportButtons } from "@/components/equipos/equipos-export-buttons";
+import { SortableTh } from "@/components/ui/sortable-th";
+import { sortRows, type SortDir } from "@/lib/sort";
 import type { EquipoExportRow } from "@/lib/equipos-export";
 
 export interface EquipoListRow {
@@ -48,9 +50,25 @@ export function EquiposTable({
   const [companyId, setCompanyId] = useState("");
   const [status, setStatus] = useState("");
 
+  const [sort, setSort] = useState("folio");
+  const [dir, setDir] = useState<SortDir>("desc");
+
+  function toggleSort(field: string) {
+    if (sort === field) {
+      setDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSort(field);
+      setDir("asc");
+    }
+  }
+
+  const th = (field: string, label: string) => (
+    <SortableTh label={label} active={sort === field} dir={dir} onClick={() => toggleSort(field)} />
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return equipos.filter((e) => {
+    const rows = equipos.filter((e) => {
       if (categoriaId && e.categoria_id !== categoriaId) return false;
       if (companyId && e.company_id !== companyId) return false;
       if (status && e.status !== status) return false;
@@ -63,7 +81,25 @@ export function EquiposTable({
         return false;
       return true;
     });
-  }, [equipos, search, categoriaId, companyId, status]);
+    return sortRows(
+      rows,
+      (e) => {
+        switch (sort) {
+          case "etiqueta": return e.etiqueta;
+          case "categoria": return e.categoria?.name;
+          case "marca": return [e.marca, e.modelo].filter(Boolean).join(" ");
+          case "ip_address": return e.ip_address
+            ? e.ip_address.split(".").map((p) => p.padStart(3, "0")).join(".")
+            : null;
+          case "company": return e.company?.name;
+          case "asignado": return e.asignado?.full_name;
+          case "status": return EQUIPO_STATUS_LABELS[e.status] ?? e.status;
+          default: return e.folio;
+        }
+      },
+      dir
+    );
+  }, [equipos, search, categoriaId, companyId, status, sort, dir]);
 
   const exportRows: EquipoExportRow[] = useMemo(
     () =>
@@ -131,14 +167,14 @@ export function EquiposTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">Etiqueta</th>
-              <th className="px-3 py-2 font-medium">Categoría</th>
-              <th className="px-3 py-2 font-medium">Marca / modelo</th>
-              <th className="px-3 py-2 font-medium">IP</th>
-              <th className="px-3 py-2 font-medium">Empresa</th>
-              <th className="px-3 py-2 font-medium">Asignado a</th>
-              <th className="px-3 py-2 font-medium">Estado</th>
+              {th("folio", "#")}
+              {th("etiqueta", "Etiqueta")}
+              {th("categoria", "Categoría")}
+              {th("marca", "Marca / modelo")}
+              {th("ip_address", "IP")}
+              {th("company", "Empresa")}
+              {th("asignado", "Asignado a")}
+              {th("status", "Estado")}
             </tr>
           </thead>
           <tbody>

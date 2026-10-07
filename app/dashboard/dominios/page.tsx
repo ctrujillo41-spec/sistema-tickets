@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { withJwtSkewRetry } from "@/lib/supabase/retry";
+import { SortableTh } from "@/components/ui/sortable-th";
+import { parseSort, sortHref, sortRows } from "@/lib/sort";
 import { DOMINIO_ESTADO_LABELS, DOMINIO_ESTADO_TONE, computeDominioEstado, diasParaVencer } from "@/lib/dominios";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +31,16 @@ function fmtDate(d: string | null) {
   return new Date(d + "T00:00:00").toLocaleDateString("es-MX", { dateStyle: "medium" });
 }
 
-export default async function DominiosPage() {
+const SORT_FIELDS = [
+  "nombre_dominio", "company", "registrador", "proveedor_hosting", "tiene_sitio_web",
+  "fecha_vencimiento", "costo_renovacion", "estado", "responsable",
+];
+
+export default async function DominiosPage({
+  searchParams,
+}: {
+  searchParams: { sort?: string; dir?: string };
+}) {
   // Este módulo guarda credenciales (registrador, hosting), así que
   // a diferencia de Equipos/Proyectos solo lo ve el admin.
   await requireRole(["admin"]);
@@ -47,11 +58,38 @@ export default async function DominiosPage() {
       .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
   );
 
-  const dominios = (data as unknown as DominioListRow[] | null) ?? [];
+  const dominiosRaw = (data as unknown as DominioListRow[] | null) ?? [];
 
-  const total = dominios.length;
-  const porVencer = dominios.filter((d) => computeDominioEstado(d.fecha_vencimiento, d.estado) === "por_vencer").length;
-  const vencidos = dominios.filter((d) => computeDominioEstado(d.fecha_vencimiento, d.estado) === "vencido").length;
+  const total = dominiosRaw.length;
+  const porVencer = dominiosRaw.filter((d) => computeDominioEstado(d.fecha_vencimiento, d.estado) === "por_vencer").length;
+  const vencidos = dominiosRaw.filter((d) => computeDominioEstado(d.fecha_vencimiento, d.estado) === "vencido").length;
+
+  const currentSort = parseSort(searchParams, SORT_FIELDS, "fecha_vencimiento", "asc");
+  const th = (field: string, label: string) => (
+    <SortableTh
+      label={label}
+      active={currentSort.sort === field}
+      dir={currentSort.dir}
+      href={sortHref("/dashboard/dominios", searchParams, field, currentSort)}
+    />
+  );
+  const dominios = sortRows(
+    dominiosRaw,
+    (d) => {
+      switch (currentSort.sort) {
+        case "nombre_dominio": return d.nombre_dominio;
+        case "company": return d.company?.name;
+        case "registrador": return d.registrador;
+        case "proveedor_hosting": return d.proveedor_hosting;
+        case "tiene_sitio_web": return d.tiene_sitio_web ? 1 : 0;
+        case "costo_renovacion": return d.costo_renovacion;
+        case "estado": return computeDominioEstado(d.fecha_vencimiento, d.estado);
+        case "responsable": return d.responsable?.full_name;
+        default: return d.fecha_vencimiento;
+      }
+    },
+    currentSort.dir
+  );
 
   return (
     <div className="space-y-6">
@@ -112,15 +150,15 @@ export default async function DominiosPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">Dominio</th>
-              <th className="px-3 py-2 font-medium">Empresa</th>
-              <th className="px-3 py-2 font-medium">Registrador</th>
-              <th className="px-3 py-2 font-medium">Hosting</th>
-              <th className="px-3 py-2 font-medium">Sitio web</th>
-              <th className="px-3 py-2 font-medium">Vencimiento</th>
-              <th className="px-3 py-2 font-medium">Costo</th>
-              <th className="px-3 py-2 font-medium">Estado</th>
-              <th className="px-3 py-2 font-medium">Responsable</th>
+              {th("nombre_dominio", "Dominio")}
+              {th("company", "Empresa")}
+              {th("registrador", "Registrador")}
+              {th("proveedor_hosting", "Hosting")}
+              {th("tiene_sitio_web", "Sitio web")}
+              {th("fecha_vencimiento", "Vencimiento")}
+              {th("costo_renovacion", "Costo")}
+              {th("estado", "Estado")}
+              {th("responsable", "Responsable")}
             </tr>
           </thead>
           <tbody>

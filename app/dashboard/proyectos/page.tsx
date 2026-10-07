@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { withJwtSkewRetry } from "@/lib/supabase/retry";
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_TONE } from "@/lib/proyectos";
 import { PRIORITY_LABELS, PRIORITY_TONE } from "@/lib/tickets";
+import { SortableTh } from "@/components/ui/sortable-th";
+import { parseSort, sortHref, sortRows } from "@/lib/sort";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,14 @@ interface ProjectListRow {
   responsable: { full_name: string | null } | null;
 }
 
-export default async function ProyectosPage() {
+const SORT_FIELDS = ["folio", "nombre", "categoria", "company", "priority", "status", "responsable", "horas"];
+const PRIORITY_RANK: Record<string, number> = { muy_baja: 1, baja: 2, media: 3, alta: 4, critica: 5 };
+
+export default async function ProyectosPage({
+  searchParams,
+}: {
+  searchParams: { sort?: string; dir?: string };
+}) {
   // Módulo interno del equipo de soporte (admin/agent): no lo ve el
   // usuario final, igual que lo aplica la RLS de la tabla proyectos.
   await requireRole(["admin", "agent"]);
@@ -42,7 +51,17 @@ export default async function ProyectosPage() {
       .limit(200)
   );
 
-  const proyectos = data as unknown as ProjectListRow[] | null;
+  const proyectosRaw = data as unknown as ProjectListRow[] | null;
+  const currentSort = parseSort(searchParams, SORT_FIELDS, "folio", "desc");
+  const th = (field: string, label: string, align?: "left" | "right") => (
+    <SortableTh
+      label={label}
+      align={align}
+      active={currentSort.sort === field}
+      dir={currentSort.dir}
+      href={sortHref("/dashboard/proyectos", searchParams, field, currentSort)}
+    />
+  );
 
   // Horas acumuladas por proyecto — consulta aparte y se agrega aquí mismo
   // en el servidor, mismo criterio que las gráficas del dashboard.
@@ -54,6 +73,25 @@ export default async function ProyectosPage() {
   for (const t of (tiempos as { proyecto_id: string; horas: number }[]) ?? []) {
     horasPorProyecto.set(t.proyecto_id, (horasPorProyecto.get(t.proyecto_id) ?? 0) + Number(t.horas));
   }
+
+  const proyectos = proyectosRaw
+    ? sortRows(
+        proyectosRaw,
+        (p) => {
+          switch (currentSort.sort) {
+            case "nombre": return p.nombre;
+            case "categoria": return p.categoria?.name;
+            case "company": return p.company?.name;
+            case "priority": return PRIORITY_RANK[p.priority] ?? 0;
+            case "status": return PROJECT_STATUS_LABELS[p.status] ?? p.status;
+            case "responsable": return p.responsable?.full_name;
+            case "horas": return horasPorProyecto.get(p.id) ?? 0;
+            default: return p.folio;
+          }
+        },
+        currentSort.dir
+      )
+    : null;
 
   return (
     <div className="space-y-6">
@@ -79,14 +117,14 @@ export default async function ProyectosPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
-              <th className="px-3 py-2 font-medium">#</th>
-              <th className="px-3 py-2 font-medium">Nombre</th>
-              <th className="px-3 py-2 font-medium">Tipo</th>
-              <th className="px-3 py-2 font-medium">Empresa</th>
-              <th className="px-3 py-2 font-medium">Prioridad</th>
-              <th className="px-3 py-2 font-medium">Estado</th>
-              <th className="px-3 py-2 font-medium">Responsable</th>
-              <th className="px-3 py-2 font-medium text-right">Horas</th>
+              {th("folio", "#")}
+              {th("nombre", "Nombre")}
+              {th("categoria", "Tipo")}
+              {th("company", "Empresa")}
+              {th("priority", "Prioridad")}
+              {th("status", "Estado")}
+              {th("responsable", "Responsable")}
+              {th("horas", "Horas", "right")}
             </tr>
           </thead>
           <tbody>
