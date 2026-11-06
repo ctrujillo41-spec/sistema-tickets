@@ -147,6 +147,258 @@ async function isAuthorized(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Copia a SharePoint y retencion.
+// Los secretos MS_* solo se leen con Deno.env.get y nunca se imprimen ni se
+// incluyen en mensajes de error: los errores solo llevan el codigo HTTP y,
+// si existe, el codigo de error corto que devuelve Microsoft.
+// ---------------------------------------------------------------------------
+
+const GRAPH_URL = "https://graph.microsoft.com/v1.0";
+const FETCH_TIMEOUT_MS = 30_000;
+const SP_KEEP_RECENT = 30;
+const SP_KEEP_MONTHS = 12;
+const SP_MAX_DELETES = 20;
+const STORAGE_KEEP_RECENT = 7;
+const STORAGE_REMOVE_BATCH = 100;
+
+// Solo se consideran para retencion los archivos con el nombre que genera
+// esta funcion (AAAA-MM-DDTHHMMSS.json); cualquier otro archivo se respeta.
+const BACKUP_FILE_RE = /^\d{4}-\d{2}-\d{2}T\d{6}\.json$/;
+
+// Error cuyo mensaje ya es seguro para guardar en backup_log.
+class SafeError extends Error {}
+
+function safeMessage(err: unknown, fallback: string): string {
+  return err instanceof SafeError ? err.message : fallback;
+}
+
+// Codigo de error corto de Microsoft (p. ej. "accessDenied", "invalid_client").
+async function graphErrorCode(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    const code = typeof body?.error === "string" ? body.error : body?.error?.code;
+    return typeof code === "string" && /^[A-Za-z0-9_.-]{1,60}$/.test(code) ? ` (${code})` : "";
+  } catch {
+    return "";
+  }
+}
+
+function encodeDrivePath(path: string): string {
+  return path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+}
+
+function sharePointConfig() {
+  const tenantId = Deno.env.get("MS_TENANT_ID");
+  const clientId = Deno.env.get("MS_CLIENT_ID");
+  const clientSecret = Deno.env.get("MS_CLIENT_SECRET");
+  const siteId = Deno.env.get("MS_SITE_ID");
+  const folder = (Deno.env.get("MS_FOLDER") ?? "").replace(/^\/+|\/+$/g, "");
+  if (!tenantId || !clientId || !clientSecret || !siteId || !folder) {
+    throw new SafeError("SharePoint: faltan secretos de configuracion MS_* (sin codigo HTTP)");
+  }
+  return { tenantId, clientId, clientSecret, siteId, folder };
+}
+
+async function getGraphToken(cfg: ReturnType<typeof sharePointConfig>): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://login.microsoftonline.com/${encodeURIComponent(cfg.tenantId)}/oauth2/v2.0/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: cfg.clientId,
+          client_secret: cfg.clientSecret,
+          grant_type: "client_credentials",
+          scope: "https://graph.microsoft.com/.default",
+        }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      }
+    );
+  } catch {
+    throw new SafeError("SharePoint: sin respuesta al pedir el token (sin codigo HTTP)");
+  }
+  if (!res.ok) {
+    throw new SafeError(`SharePoint: HTTP ${res.status} al pedir el token${await graphErrorCode(res)}`);
+  }
+  const body = await res.json().catch(() => null);
+  if (typeof body?.access_token !== "string") {
+    throw new SafeError(`SharePoint: HTTP ${res.status}, la respuesta no trae access_token`);
+  }
+  return body.access_token;
+}
+
+async function uploadToSharePoint(
+  cfg: ReturnType<typeof sharePointConfig>,
+  token: string,
+  year: string,
+  fileName: string,
+  bytes: Uint8Array
+): Promise<{ id: string | null; path: string; webUrl: string | null }> {
+  const spPath = `${cfg.folder}/${year}/${fileName}`;
+  const url =
+    `${GRAPH_URL}/sites/${cfg.siteId}/drive/root:/${encodeDrivePath(spPath)}:/content` +
+    `?@microsoft.graph.conflictBehavior=fail`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: bytes,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch {
+    throw new SafeError("SharePoint: sin respuesta al subir el archivo (sin codigo HTTP)");
+  }
+  if (!res.ok) {
+    throw new SafeError(`SharePoint: HTTP ${res.status} al subir el archivo${await graphErrorCode(res)}`);
+  }
+  const item = await res.json().catch(() => null);
+  return {
+    id: typeof item?.id === "string" ? item.id : null,
+    path: spPath,
+    webUrl: typeof item?.webUrl === "string" ? item.webUrl : null,
+  };
+}
+
+type DriveItem = { id: string; name: string; folder?: unknown; file?: unknown };
+
+// Lista los hijos de una carpeta de Graph siguiendo @odata.nextLink.
+async function listDriveChildren(token: string, firstUrl: string): Promise<DriveItem[]> {
+  const items: DriveItem[] = [];
+  let url: string | null = firstUrl;
+  while (url) {
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+    } catch {
+      throw new SafeError("sin respuesta al listar archivos (sin codigo HTTP)");
+    }
+    if (!res.ok) {
+      throw new SafeError(`HTTP ${res.status} al listar archivos${await graphErrorCode(res)}`);
+    }
+    const body = await res.json();
+    items.push(...((body?.value ?? []) as DriveItem[]));
+    url = typeof body?.["@odata.nextLink"] === "string" ? body["@odata.nextLink"] : null;
+  }
+  return items;
+}
+
+// Conserva los 30 mas recientes + el mas antiguo de cada uno de los ultimos
+// 12 meses; borra el resto (van a la papelera del sitio), maximo 20 por corrida.
+async function sharePointRetention(
+  cfg: ReturnType<typeof sharePointConfig>,
+  token: string,
+  uploaded: { id: string | null; fileName: string },
+  now: Date
+): Promise<{ deleted: number; failedStatuses: number[] }> {
+  const site = `${GRAPH_URL}/sites/${cfg.siteId}/drive`;
+  const rootChildren = await listDriveChildren(
+    token,
+    `${site}/root:/${encodeDrivePath(cfg.folder)}:/children?$select=id,name,folder&$top=200`
+  );
+  const yearFolders = rootChildren.filter((i) => i.folder && /^\d{4}$/.test(i.name));
+
+  const files: DriveItem[] = [];
+  for (const yf of yearFolders) {
+    const children = await listDriveChildren(
+      token,
+      `${site}/items/${encodeURIComponent(yf.id)}/children?$select=id,name,file&$top=200`
+    );
+    files.push(...children.filter((i) => i.file && BACKUP_FILE_RE.test(i.name)));
+  }
+
+  if (files.length <= SP_KEEP_RECENT) return { deleted: 0, failedStatuses: [] };
+
+  const byNameDesc = [...files].sort((a, b) => (a.name < b.name ? 1 : a.name > b.name ? -1 : 0));
+  const keep = new Set<string>(byNameDesc.slice(0, SP_KEEP_RECENT).map((f) => f.id));
+
+  for (let k = 0; k < SP_KEEP_MONTHS; k++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - k, 1));
+    const monthKey = d.toISOString().slice(0, 7); // AAAA-MM
+    const oldest = byNameDesc.filter((f) => f.name.startsWith(monthKey)).at(-1);
+    if (oldest) keep.add(oldest.id);
+  }
+
+  const toDelete = byNameDesc
+    .filter((f) => !keep.has(f.id) && f.id !== uploaded.id && f.name !== uploaded.fileName)
+    .reverse() // los mas antiguos primero
+    .slice(0, SP_MAX_DELETES);
+
+  let deleted = 0;
+  const failedStatuses: number[] = [];
+  for (const f of toDelete) {
+    try {
+      const res = await fetch(`${site}/items/${encodeURIComponent(f.id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      await res.body?.cancel();
+      if (res.ok) deleted++;
+      else failedStatuses.push(res.status);
+    } catch {
+      failedStatuses.push(0);
+    }
+  }
+  return { deleted, failedStatuses };
+}
+
+// Conserva los 7 respaldos mas recientes del bucket "backups" y borra el resto.
+async function storageRetention(
+  supabase: ReturnType<typeof createClient>,
+  currentPath: string
+): Promise<number> {
+  const bucket = supabase.storage.from("backups");
+
+  async function listAll(prefix: string) {
+    const out: { name: string; id: string | null }[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await bucket.list(prefix, {
+        limit: 1000,
+        offset,
+        sortBy: { column: "name", order: "asc" },
+      });
+      if (error) throw new SafeError(`no se pudo listar "${prefix || "/"}" en Storage`);
+      out.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    return out;
+  }
+
+  const paths: string[] = [];
+  for (const entry of await listAll("")) {
+    if (entry.id === null) {
+      // Carpeta por fecha
+      for (const f of await listAll(entry.name)) {
+        if (f.id !== null && BACKUP_FILE_RE.test(f.name)) paths.push(`${entry.name}/${f.name}`);
+      }
+    } else if (BACKUP_FILE_RE.test(entry.name)) {
+      paths.push(entry.name);
+    }
+  }
+
+  if (paths.length <= STORAGE_KEEP_RECENT) return 0;
+
+  const byNameDesc = paths.sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+  const toDelete = byNameDesc.slice(STORAGE_KEEP_RECENT).filter((p) => p !== currentPath);
+
+  let deleted = 0;
+  for (let i = 0; i < toDelete.length; i += STORAGE_REMOVE_BATCH) {
+    const batch = toDelete.slice(i, i + STORAGE_REMOVE_BATCH);
+    const { data, error } = await bucket.remove(batch);
+    if (error) throw new SafeError(`fallo un lote de borrado en Storage (${deleted} borrados antes)`);
+    deleted += data?.length ?? batch.length;
+  }
+  return deleted;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -241,6 +493,64 @@ Deno.serve(async (req: Request) => {
       throw new Error("No se pudo verificar el archivo subido (no aparece en el listado)");
     }
 
+    // Copia a SharePoint. Si falla, la corrida queda como error, el archivo
+    // se conserva en Supabase Storage y no se ejecuta ninguna retencion.
+    let spConfig: ReturnType<typeof sharePointConfig>;
+    let graphToken: string;
+    let sharepoint: { id: string | null; path: string; webUrl: string | null };
+    try {
+      spConfig = sharePointConfig();
+      graphToken = await getGraphToken(spConfig);
+      sharepoint = await uploadToSharePoint(spConfig, graphToken, isoDate.slice(0, 4), fileName, fileBytes);
+    } catch (spErr) {
+      const spMessage = safeMessage(spErr, "SharePoint: error inesperado (sin codigo HTTP)");
+      await supabase
+        .from("backup_log")
+        .update({
+          status: "error",
+          finished_at: new Date().toISOString(),
+          storage_path: path,
+          tables_backed_up: rowCounts,
+          file_size_bytes: fileBytes.byteLength,
+          error_message: spMessage,
+        })
+        .eq("id", logId);
+
+      return new Response(
+        JSON.stringify({ ok: false, error: spMessage, path, rowCounts, bytes: fileBytes.byteLength }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Retenciones: si fallan, el respaldo si quedo, asi que solo se registra
+    // un aviso (en error_message, con status "success").
+    const warnings: string[] = [];
+    let sharepointDeleted = 0;
+    let supabaseDeleted = 0;
+
+    try {
+      const r = await sharePointRetention(
+        spConfig,
+        graphToken,
+        { id: sharepoint.id, fileName },
+        generatedAt
+      );
+      sharepointDeleted = r.deleted;
+      if (r.failedStatuses.length > 0) {
+        warnings.push(
+          `retencion SharePoint: ${r.failedStatuses.length} borrado(s) fallaron (HTTP ${r.failedStatuses.join(", ")})`
+        );
+      }
+    } catch (retErr) {
+      warnings.push(`retencion SharePoint: ${safeMessage(retErr, "error inesperado")}`);
+    }
+
+    try {
+      supabaseDeleted = await storageRetention(supabase, path);
+    } catch (retErr) {
+      warnings.push(`retencion Storage: ${safeMessage(retErr, "error inesperado")}`);
+    }
+
     await supabase
       .from("backup_log")
       .update({
@@ -249,11 +559,19 @@ Deno.serve(async (req: Request) => {
         storage_path: path,
         tables_backed_up: rowCounts,
         file_size_bytes: fileBytes.byteLength,
+        error_message: warnings.length > 0 ? `Aviso: ${warnings.join("; ")}` : null,
       })
       .eq("id", logId);
 
     return new Response(
-      JSON.stringify({ ok: true, path, rowCounts, bytes: fileBytes.byteLength }),
+      JSON.stringify({
+        ok: true,
+        path,
+        rowCounts,
+        bytes: fileBytes.byteLength,
+        sharepoint: { path: sharepoint.path, webUrl: sharepoint.webUrl },
+        retention: { sharepointDeleted, supabaseDeleted },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
