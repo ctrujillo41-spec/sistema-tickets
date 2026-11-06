@@ -217,7 +217,7 @@ export function DominioEditForm({
               ))}
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              "Por vencer" y "Vencido" se calculan solos según la fecha; usa "Cancelado" para marcarlo manualmente.
+              &quot;Por vencer&quot; y &quot;Vencido&quot; se calculan solos según la fecha; usa &quot;Cancelado&quot; para marcarlo manualmente.
             </p>
           </div>
           <div className="space-y-1">

@@ -12,7 +12,7 @@ export default async function ProyectoTiposSettingsPage() {
       <div>
         <h1 className="text-lg font-semibold">Tipos de proyecto</h1>
         <p className="text-sm text-muted-foreground">
-          El campo "Tipo" que se elige al crear un proyecto en el módulo de Proyectos.
+          El campo &quot;Tipo&quot; que se elige al crear un proyecto en el módulo de Proyectos.
         </p>
       </div>
       <ProyectoTiposManager initial={data ?? []} />
