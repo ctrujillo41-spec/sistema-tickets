@@ -31,13 +31,86 @@ const CORE_TABLES = [
   "audit_log",
 ];
 
+// El panel de Respaldos invoca la funcion desde el navegador, asi que
+// necesita responder el preflight de CORS.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-triggered-by",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function forbidden() {
+  return new Response(JSON.stringify({ error: "forbidden" }), {
+    status: 403,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+// Lee el payload del JWT sin verificar la firma: verify_jwt ya la valido
+// en la plataforma antes de llegar aqui. Devuelve null si esta mal formado.
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded));
+    return payload && typeof payload === "object" ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+// Solo el cron (service_role) o un admin activo pueden lanzar el respaldo.
+async function isAuthorized(
+  req: Request,
+  supabase: ReturnType<typeof createClient>
+): Promise<boolean> {
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return false;
+
+    const payload = decodeJwtPayload(token);
+    if (!payload) return false;
+    if (payload.role === "service_role") return true;
+
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
+    if (userError || !userData?.user) return false;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role, is_active")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    if (profileError || !profile) return false;
+
+    return profile.role === "admin" && profile.is_active === true;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   const triggeredBy = req.headers.get("x-triggered-by") === "manual" ? "manual" : "cron";
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
+  if (!(await isAuthorized(req, supabase))) {
+    return forbidden();
+  }
 
   const { data: logRow, error: logInsertError } = await supabase
     .from("backup_log")
@@ -48,7 +121,7 @@ Deno.serve(async (req: Request) => {
   if (logInsertError || !logRow) {
     return new Response(
       JSON.stringify({ ok: false, error: "No se pudo crear el registro de backup_log" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -109,7 +182,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({ ok: true, path, rowCounts, bytes: fileBytes.byteLength }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -120,7 +193,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ ok: false, error: message }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
