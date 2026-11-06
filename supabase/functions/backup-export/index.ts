@@ -29,7 +29,58 @@ const CORE_TABLES = [
   "notifications",
   "kb_articles",
   "audit_log",
+  "proyectos",
+  "proyecto_tiempos",
+  "proyecto_categorias",
+  "equipos",
+  "equipo_bitacora",
+  "equipo_categorias",
+  "dominios",
+  "sla_policies",
+  "business_hours",
+  "business_hours_settings",
 ];
+
+// Llave primaria para ordenar la paginacion. Por defecto es "id".
+const PRIMARY_KEYS: Record<string, string> = {
+  business_hours: "weekday",
+  business_hours_settings: "singleton",
+  sla_policies: "priority",
+};
+
+// Columnas a leer por tabla. Por defecto "*". En dominios se excluyen
+// password_registrador y password_hosting para que las credenciales no
+// queden en el respaldo.
+const SELECT_COLUMNS: Record<string, string> = {
+  dominios: [
+    "id",
+    "nombre_dominio",
+    "company_id",
+    "registrador",
+    "proveedor_hosting",
+    "tiene_sitio_web",
+    "url_sitio",
+    "fecha_registro",
+    "fecha_vencimiento",
+    "costo_renovacion",
+    "moneda",
+    "ciclo_renovacion",
+    "auto_renovacion",
+    "estado",
+    "usuario_registrador",
+    "usuario_hosting",
+    "servidor_dns",
+    "correo_notificaciones",
+    "proveedor_ssl",
+    "fecha_vencimiento_ssl",
+    "responsable_id",
+    "notas",
+    "created_at",
+    "updated_at",
+  ].join(","),
+};
+
+const PAGE_SIZE = 1000;
 
 // El panel de Respaldos invoca la funcion desde el navegador, asi que
 // necesita responder el preflight de CORS.
@@ -131,11 +182,32 @@ Deno.serve(async (req: Request) => {
     const bundle: Record<string, unknown[]> = {};
     const rowCounts: Record<string, number> = {};
 
+    // Lee cada tabla en bloques de PAGE_SIZE filas ordenadas por su llave
+    // primaria. Cualquier error en un bloque hace fallar toda la corrida, asi
+    // que nunca se guarda un respaldo parcial como exitoso.
     for (const table of CORE_TABLES) {
-      const { data, error } = await supabase.from(table).select("*");
-      if (error) throw new Error(`Error leyendo ${table}: ${error.message}`);
-      bundle[table] = data ?? [];
-      rowCounts[table] = data?.length ?? 0;
+      const pk = PRIMARY_KEYS[table] ?? "id";
+      const columns = SELECT_COLUMNS[table] ?? "*";
+      const rows: unknown[] = [];
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from(table)
+          .select(columns)
+          .order(pk, { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) {
+          throw new Error(`Error leyendo ${table} (filas ${from}-${from + PAGE_SIZE - 1}): ${error.message}`);
+        }
+        const chunk = data ?? [];
+        rows.push(...chunk);
+        if (chunk.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      bundle[table] = rows;
+      rowCounts[table] = rows.length;
     }
 
     const generatedAt = new Date();
