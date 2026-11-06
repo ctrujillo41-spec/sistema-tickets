@@ -1,0 +1,37 @@
+
+alter table public.equipos
+  add column hostname text,
+  add column usuario_windows text,
+  add column ultimo_usuario_windows text,
+  add column mac_address text,
+  add column adaptador_red text,
+  add column gpu text,
+  add column ram_total_gb numeric(6,2),
+  add column ram_libre_gb numeric(6,2),
+  add column ram_libre_pct integer,
+  add column disco_modelo text,
+  add column disco_total_gb numeric(8,2),
+  add column disco_libre_gb numeric(8,2),
+  add column disco_libre_pct integer,
+  add column salud_disco text,
+  add column monitores text,
+  add column bateria text,
+  add column build_os text,
+  add column windows_activado text,
+  add column uptime_dias numeric(8,2),
+  add column identidad_red text,
+  add column office_version text,
+  add column office_activado text,
+  add column antivirus text,
+  add column firewall text,
+  add column bitlocker text,
+  add column tpm text,
+  add column secure_boot text,
+  add column administradores_locales text,
+  add column programas_instalados_count integer,
+  add column top_programas text,
+  add column diagnostico text,
+  add column ultimo_escaneo_at timestamptz;
+
+create index idx_equipos_hostname on public.equipos(hostname);
+;
