@@ -30,9 +30,7 @@ interface DominioDetail {
   proveedor_ssl: string | null;
   fecha_vencimiento_ssl: string | null;
   usuario_registrador: string | null;
-  password_registrador: string | null;
   usuario_hosting: string | null;
-  password_hosting: string | null;
   servidor_dns: string | null;
   correo_notificaciones: string | null;
   notas: string | null;
@@ -57,7 +55,7 @@ export default async function DominioDetailPage({ params }: { params: { id: stri
         `id, nombre_dominio, company_id, responsable_id, registrador, proveedor_hosting,
          fecha_registro, fecha_vencimiento, costo_renovacion, moneda, ciclo_renovacion,
          auto_renovacion, estado, tiene_sitio_web, url_sitio, proveedor_ssl, fecha_vencimiento_ssl,
-         usuario_registrador, password_registrador, usuario_hosting, password_hosting,
+         usuario_registrador, usuario_hosting,
          servidor_dns, correo_notificaciones, notas, created_at,
          company:companies(name),
          responsable:profiles!dominios_responsable_id_fkey(full_name)`

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,53 +37,10 @@ interface DominioInitial {
   proveedor_ssl: string | null;
   fecha_vencimiento_ssl: string | null;
   usuario_registrador: string | null;
-  password_registrador: string | null;
   usuario_hosting: string | null;
-  password_hosting: string | null;
   servidor_dns: string | null;
   correo_notificaciones: string | null;
   notas: string | null;
-}
-
-function PasswordField({
-  label,
-  value,
-  onChange,
-  onBlur,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur: () => void;
-  disabled: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <div className="relative">
-        <Input
-          type={visible ? "text" : "password"}
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          autoComplete="new-password"
-          className="pr-9"
-        />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-          tabIndex={-1}
-          aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
-        >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </div>
-  );
 }
 
 export function DominioEditForm({
@@ -114,9 +71,7 @@ export function DominioEditForm({
   const [proveedorSsl, setProveedorSsl] = useState(initial.proveedor_ssl ?? "");
   const [fechaVencimientoSsl, setFechaVencimientoSsl] = useState(initial.fecha_vencimiento_ssl ?? "");
   const [usuarioRegistrador, setUsuarioRegistrador] = useState(initial.usuario_registrador ?? "");
-  const [passwordRegistrador, setPasswordRegistrador] = useState(initial.password_registrador ?? "");
   const [usuarioHosting, setUsuarioHosting] = useState(initial.usuario_hosting ?? "");
-  const [passwordHosting, setPasswordHosting] = useState(initial.password_hosting ?? "");
   const [servidorDns, setServidorDns] = useState(initial.servidor_dns ?? "");
   const [correoNotificaciones, setCorreoNotificaciones] = useState(initial.correo_notificaciones ?? "");
   const [notas, setNotas] = useState(initial.notas ?? "");
@@ -416,13 +371,6 @@ export function DominioEditForm({
                 onBlur={() => blurPersist("usuario_registrador", usuarioRegistrador, "usuario_registrador")}
               />
             </div>
-            <PasswordField
-              label="Contraseña del registrador"
-              value={passwordRegistrador}
-              disabled={saving}
-              onChange={setPasswordRegistrador}
-              onBlur={() => blurPersist("password_registrador", passwordRegistrador, "password_registrador")}
-            />
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Usuario de hosting</label>
               <Input
@@ -432,13 +380,6 @@ export function DominioEditForm({
                 onBlur={() => blurPersist("usuario_hosting", usuarioHosting, "usuario_hosting")}
               />
             </div>
-            <PasswordField
-              label="Contraseña de hosting"
-              value={passwordHosting}
-              disabled={saving}
-              onChange={setPasswordHosting}
-              onBlur={() => blurPersist("password_hosting", passwordHosting, "password_hosting")}
-            />
             <div className="space-y-1 sm:col-span-2">
               <label className="text-xs font-medium text-muted-foreground">Servidor DNS / nameservers</label>
               <Input

@@ -231,8 +231,6 @@ export type Database = {
           moneda: string
           nombre_dominio: string
           notas: string | null
-          password_hosting: string | null
-          password_registrador: string | null
           proveedor_hosting: string | null
           proveedor_ssl: string | null
           registrador: string | null
@@ -259,8 +257,6 @@ export type Database = {
           moneda?: string
           nombre_dominio: string
           notas?: string | null
-          password_hosting?: string | null
-          password_registrador?: string | null
           proveedor_hosting?: string | null
           proveedor_ssl?: string | null
           registrador?: string | null
@@ -287,8 +283,6 @@ export type Database = {
           moneda?: string
           nombre_dominio?: string
           notas?: string | null
-          password_hosting?: string | null
-          password_registrador?: string | null
           proveedor_hosting?: string | null
           proveedor_ssl?: string | null
           registrador?: string | null

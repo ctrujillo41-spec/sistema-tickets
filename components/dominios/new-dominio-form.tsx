@@ -34,9 +34,7 @@ export function NewDominioForm({ companies, staff }: { companies: Company[]; sta
   const [tieneSitioWeb, setTieneSitioWeb] = useState(false);
   const [urlSitio, setUrlSitio] = useState("");
   const [usuarioRegistrador, setUsuarioRegistrador] = useState("");
-  const [passwordRegistrador, setPasswordRegistrador] = useState("");
   const [usuarioHosting, setUsuarioHosting] = useState("");
-  const [passwordHosting, setPasswordHosting] = useState("");
   const [servidorDns, setServidorDns] = useState("");
   const [correoNotificaciones, setCorreoNotificaciones] = useState("");
   const [proveedorSsl, setProveedorSsl] = useState("");
@@ -67,9 +65,7 @@ export function NewDominioForm({ companies, staff }: { companies: Company[]; sta
         tiene_sitio_web: tieneSitioWeb,
         url_sitio: tieneSitioWeb ? urlSitio.trim() || null : null,
         usuario_registrador: usuarioRegistrador.trim() || null,
-        password_registrador: passwordRegistrador || null,
         usuario_hosting: usuarioHosting.trim() || null,
-        password_hosting: passwordHosting || null,
         servidor_dns: servidorDns.trim() || null,
         correo_notificaciones: correoNotificaciones.trim() || null,
         proveedor_ssl: proveedorSsl.trim() || null,
@@ -244,26 +240,8 @@ export function NewDominioForm({ companies, staff }: { companies: Company[]; sta
           <Input value={usuarioRegistrador} onChange={(e) => setUsuarioRegistrador(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Contraseña del registrador</label>
-          <Input
-            type="password"
-            value={passwordRegistrador}
-            onChange={(e) => setPasswordRegistrador(e.target.value)}
-            autoComplete="new-password"
-          />
-        </div>
-        <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Usuario de hosting</label>
           <Input value={usuarioHosting} onChange={(e) => setUsuarioHosting(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Contraseña de hosting</label>
-          <Input
-            type="password"
-            value={passwordHosting}
-            onChange={(e) => setPasswordHosting(e.target.value)}
-            autoComplete="new-password"
-          />
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">Servidor DNS / nameservers</label>
