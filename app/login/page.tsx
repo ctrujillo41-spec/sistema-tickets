@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -148,13 +147,6 @@ export default function LoginPage() {
               {resetLoading ? "Enviando…" : "¿Olvidaste tu contraseña?"}
             </button>
           </form>
-
-          <p className="text-xs text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link href="/signup" className="font-medium text-accent hover:underline">
-              Crear cuenta
-            </Link>
-          </p>
 
           <div className="flex w-full items-center gap-2 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" />

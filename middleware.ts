@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   // /auth/callback recibe el redirect de Microsoft (Fase 8, SSO) antes de
   // que exista sesión: el propio route handler es quien la crea.
-  const PUBLIC_ROUTES = ["/login", "/signup", "/auth/callback"];
+  const PUBLIC_ROUTES = ["/login", "/auth/callback"];
   const isPublicRoute = PUBLIC_ROUTES.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
