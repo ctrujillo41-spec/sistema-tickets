@@ -17,9 +17,9 @@ export default async function UsersSettingsPage() {
       <div>
         <h1 className="text-lg font-semibold">Usuarios y agentes</h1>
         <p className="text-sm text-muted-foreground">
-          Cambia el rol, departamento o empresa de cada persona. Las nuevas cuentas se crean
-          desde la pantalla de registro (/signup) con rol &quot;usuario final&quot; por
-          defecto.
+          Cambia el rol, departamento o empresa de cada persona. El registro público está
+          cerrado: las nuevas cuentas las crea un administrador desde el panel de Supabase
+          (Authentication &gt; Users) y empiezan con rol &quot;usuario final&quot;.
         </p>
       </div>
 
