@@ -50,6 +50,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Tarea 2.8 (S-16): el staff (admin y agentes) necesita segundo factor
+  // (aal2) para entrar al panel. Los usuarios finales no se ven afectados.
+  const { pathname } = request.nextUrl;
+  const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  if (user && isDashboard) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      // No se bloquea: la proteccion definitiva en la base llega en la parte C.
+      console.error("middleware MFA: no se pudo leer el rol del perfil", profileError.code);
+    } else if (profile?.role === "admin" || profile?.role === "agent") {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/mfa";
+        url.search = "";
+        url.searchParams.set("next", pathname + request.nextUrl.search);
+        // Conserva las cookies de sesion que Supabase pudo refrescar en este request.
+        const redirect = NextResponse.redirect(url);
+        response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+        return redirect;
+      }
+    }
+  }
+
   return response;
 }
 
