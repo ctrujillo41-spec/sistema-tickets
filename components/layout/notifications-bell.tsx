@@ -25,19 +25,30 @@ export function NotificationsBell({ userId }: { userId: string }) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Total real de no leidas (no solo de las 20 visibles).
+  const [unreadTotal, setUnreadTotal] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
 
     async function load() {
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("recipient_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (active) setNotifications(data ?? []);
+      const [{ data }, { count }] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select("*")
+          .eq("recipient_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("recipient_id", userId)
+          .eq("is_read", false),
+      ]);
+      if (!active) return;
+      setNotifications(data ?? []);
+      setUnreadTotal(count ?? 0);
     }
     load();
 
@@ -48,6 +59,7 @@ export function NotificationsBell({ userId }: { userId: string }) {
         { event: "INSERT", schema: "public", table: "notifications", filter: `recipient_id=eq.${userId}` },
         (payload) => {
           setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 20));
+          setUnreadTotal((total) => total + 1);
         }
       )
       .subscribe();
@@ -67,22 +79,27 @@ export function NotificationsBell({ userId }: { userId: string }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
   async function handleSelect(n: Notification) {
     setOpen(false);
     if (!n.is_read) {
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+      setUnreadTotal((total) => Math.max(0, total - 1));
       await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
     }
     if (n.ticket_id) router.push(`/dashboard/tickets/${n.ticket_id}`);
   }
 
+  // Marca como leidas TODAS las del usuario en la base, no solo las visibles.
   async function markAllRead() {
-    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadIds.length === 0) return;
+    if (unreadTotal === 0) return;
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("recipient_id", userId)
+      .eq("is_read", false);
+    if (error) return;
+    setUnreadTotal(0);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
   }
 
   return (
@@ -94,9 +111,9 @@ export function NotificationsBell({ userId }: { userId: string }) {
         className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <Bell className="h-4 w-4" />
-        {unreadCount > 0 && (
+        {unreadTotal > 0 && (
           <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {unreadTotal > 9 ? "9+" : unreadTotal}
           </span>
         )}
       </button>
@@ -105,7 +122,7 @@ export function NotificationsBell({ userId }: { userId: string }) {
         <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border border-border bg-card shadow-lg">
           <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <p className="text-sm font-medium">Notificaciones</p>
-            {unreadCount > 0 && (
+            {unreadTotal > 0 && (
               <button
                 type="button"
                 onClick={markAllRead}
