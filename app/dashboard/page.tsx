@@ -81,7 +81,7 @@ export default async function DashboardPage() {
         .from("tickets")
         .select("id", { count: "exact", head: true })
         .eq("priority", "critica")
-        .not("status", "in", "(cerrado)")
+        .not("status", "in", "(resuelto,cerrado)")
     ),
     withJwtSkewRetry(() =>
       supabase
