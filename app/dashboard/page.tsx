@@ -57,7 +57,7 @@ export default async function DashboardPage() {
 
   const [abiertos, cerradosMes, pendientes, vencidos, criticos, recientes] = await Promise.all([
     withJwtSkewRetry(() =>
-      supabase.from("tickets").select("id", { count: "exact", head: true }).not("status", "in", "(cerrado)")
+      supabase.from("tickets").select("id", { count: "exact", head: true }).not("status", "in", "(resuelto,cerrado)")
     ),
     withJwtSkewRetry(() =>
       supabase
@@ -92,14 +92,14 @@ export default async function DashboardPage() {
     ),
   ]);
 
-  // Datos para las gráficas: solo tickets abiertos (no cerrados), traemos
+  // Datos para las gráficas: solo tickets abiertos (ni resueltos ni cerrados), traemos
   // los campos mínimos y agregamos aquí mismo en el servidor — el volumen
   // de un helpdesk interno de PyME no justifica una vista/RPC aparte.
   const { data: openForCharts } = await withJwtSkewRetry(() =>
     supabase
       .from("tickets")
       .select("priority, status, department:departments(name), company:companies(name)")
-      .not("status", "in", "(cerrado)")
+      .not("status", "in", "(resuelto,cerrado)")
       .limit(2000)
   );
 
